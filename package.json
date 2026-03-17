@@ -1,0 +1,41 @@
+{
+  "name": "@botuyo/mcp",
+  "version": "0.1.0",
+  "description": "BotUyo MCP Server — create and manage AI agents via Model Context Protocol",
+  "keywords": ["mcp", "botuyo", "ai-agents", "chatbot", "model-context-protocol"],
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "botuyo-mcp": "dist/index.js"
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "start": "node dist/index.js",
+    "inspect": "npx @modelcontextprotocol/inspector node dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.7.0",
+    "node-fetch": "^3.3.2",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MarcoAR1/botuyo-backend.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://botuyo.com",
+  "license": "MIT"
+}
