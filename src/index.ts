@@ -38,10 +38,10 @@ async function main() {
       return
     }
 
-    // ── auth (backward compat alias for login) ─────────────────────────────
+    // ── auth (browser OAuth flow) ────────────────────────────────────────
     case 'auth': {
-      const { runLogin } = await import('./commands/login.js')
-      await runLogin(rest)
+      const { runAuth } = await import('./commands/auth.js')
+      await runAuth(rest)
       return
     }
 
