@@ -1,97 +1,99 @@
 /**
  * BotuyoApiClient - Thin HTTP wrapper around the BotUyo REST API
  * All MCP tools go through this client.
+ *
+ * Uses a JWT token directly (obtained via `npx @botuyo/mcp login`).
  */
 
 import fetch, { Response } from 'node-fetch'
 
 export interface BotuyoClientConfig {
   apiUrl: string
-  apiKey: string
+  token: string
 }
 
-export interface AuthResult {
-  token: string
+export interface AuthInfo {
   tenantId: string
   tenantName: string
   role: string
-  canWrite: boolean
-  channels: Array<{ type: string; status: string }>
-  adminPanelUrl: string
+  email: string
 }
 
 export class BotuyoApiClient {
   private config: BotuyoClientConfig
-  private token: string | null = null
-  private authResult: AuthResult | null = null
-  private tokenExpiresAt: number = 0
+  private authInfo: AuthInfo | null = null
 
   constructor(config: BotuyoClientConfig) {
     this.config = config
   }
 
-  /** Exchange API key for a JWT and cache it for 55 minutes */
-  async authenticate(): Promise<AuthResult> {
-    const now = Date.now()
-    if (this.token && this.authResult && now < this.tokenExpiresAt) {
-      return this.authResult
-    }
+  /** Verify the stored JWT is still valid by calling GET /api/auth/me */
+  async verify(): Promise<AuthInfo> {
+    if (this.authInfo) return this.authInfo
 
-    const res = await fetch(`${this.config.apiUrl}/api/v1/mcp/auth`, {
-      method: 'POST',
-      headers: {
-        'x-api-key': this.config.apiKey,
-        'Content-Type': 'application/json'
-      }
+    const res = await fetch(`${this.config.apiUrl}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${this.config.token}` }
     })
 
     const body = await this.parseJson(res)
     if (!body.success) {
-      throw new Error(`Authentication failed: ${body.error || 'Unknown error'}`)
+      throw new Error(`Session expired or invalid: ${body.error || 'Unknown error'}. Run: npx @botuyo/mcp login`)
     }
 
-    this.token = body.data.token
-    this.authResult = body.data as AuthResult
-    this.tokenExpiresAt = now + 55 * 60 * 1000 // 55 min (token expires in 1h)
+    const user = body.data.user
+    this.authInfo = {
+      tenantId: user.tenantIds?.[0] || '',
+      tenantName: '', // Will be enriched from credentials
+      role: user.roles?.[0]?.role || 'member',
+      email: user.email
+    }
 
-    return this.authResult
+    return this.authInfo
   }
 
   /** Make an authenticated GET request */
   async get<T = any>(path: string): Promise<T> {
-    await this.authenticate()
     const res = await fetch(`${this.config.apiUrl}${path}`, {
-      headers: { Authorization: `Bearer ${this.token!}` }
+      headers: { Authorization: `Bearer ${this.config.token}` }
     })
-    return this.parseJson(res)
+    return this.handleResponse(res)
   }
 
   /** Make an authenticated POST request */
   async post<T = any>(path: string, data: unknown): Promise<T> {
-    await this.authenticate()
     const res = await fetch(`${this.config.apiUrl}${path}`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${this.token!}`,
+        Authorization: `Bearer ${this.config.token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(data)
     })
-    return this.parseJson(res)
+    return this.handleResponse(res)
   }
 
   /** Make an authenticated PUT request */
   async put<T = any>(path: string, data: unknown): Promise<T> {
-    await this.authenticate()
     const res = await fetch(`${this.config.apiUrl}${path}`, {
       method: 'PUT',
       headers: {
-        Authorization: `Bearer ${this.token!}`,
+        Authorization: `Bearer ${this.config.token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(data)
     })
-    return this.parseJson(res)
+    return this.handleResponse(res)
+  }
+
+  private async handleResponse(res: Response): Promise<any> {
+    const json = await this.parseJson(res)
+
+    // Detect expired token
+    if (res.status === 401) {
+      throw new Error('Sesión expirada. Ejecutá: npx @botuyo/mcp login')
+    }
+
+    return json
   }
 
   private async parseJson(res: Response): Promise<any> {
@@ -103,6 +105,7 @@ export class BotuyoApiClient {
       }
       return json
     } catch (e) {
+      if (e instanceof Error && e.message.includes('HTTP')) throw e
       throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`)
     }
   }
