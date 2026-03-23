@@ -9,7 +9,8 @@ This REPLACES the entire agentConfig — use export_agent_json first to get the 
 edit it, then use this tool to apply the changes.
 
 The agentConfig must include at least 'name' and 'identity'.
-All fields (stages, connections, channelFlows, enabledTools, etc.) will be overwritten.
+All fields (stages, connections, channelFlows, enabledTools, widgetConfig, etc.) will be overwritten.
+Internal fields (model, temperature, summaryThreshold, voice.liveModel) are preserved from existing config.
 
 Requires role: owner, admin, or developer.`,
   inputSchema: {
@@ -35,7 +36,30 @@ Requires role: owner, admin, or developer.`,
           connections: { type: 'array', description: 'Array of connection edges: { id, from, to, type, condition? }' },
           channelFlows: { type: 'object', description: 'Per-channel flow overrides: { channelName: { connections: [...] } }' },
           enabledTools: { type: 'array', items: { type: 'string' }, description: 'Tool IDs to enable' },
-          channels: { type: 'array', items: { type: 'string' }, description: 'Channels: web, whatsapp, phone, etc.' }
+          channels: { type: 'array', items: { type: 'string' }, description: 'Channels: web, whatsapp, phone, etc.' },
+          widgetConfig: {
+            type: 'object',
+            description: 'Widget appearance and behavior config',
+            properties: {
+              cssVariables: {
+                type: 'object',
+                description: 'CSS custom properties for widget theming. Keys are variable names (e.g. "primary", "background"), values are HSL values WITHOUT the hsl() wrapper (e.g. "210 100% 50%").'
+              },
+              welcomeMessage: { type: 'string', description: 'Initial greeting shown when widget opens' },
+              placeholder: { type: 'string', description: 'Placeholder text in chat input' },
+              position: { type: 'string', description: 'Widget position: bottom-right, bottom-left, etc.' }
+            }
+          },
+          voice: {
+            type: 'object',
+            description: 'Voice config (profile display name + widgetCallEnabled toggle). liveModel is admin-only and preserved.',
+            properties: {
+              profile: { type: 'string', description: 'Voice profile display name (e.g. "Coral Cálida")' },
+              widgetCallEnabled: { type: 'boolean', description: 'Whether voice calls are enabled in the widget' }
+            }
+          },
+          channelPrompts: { type: 'object', description: 'Per-channel system prompt overrides: { channelName: "prompt text" }' },
+          knowledgeDocumentIds: { type: 'array', items: { type: 'string' }, description: 'Knowledge base document IDs for RAG' }
         },
         required: ['name', 'identity']
       }
