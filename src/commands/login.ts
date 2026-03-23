@@ -160,6 +160,7 @@ export async function runLogin(args: string[]): Promise<void> {
   console.log(`   Role:    ${creds.role}`)
   console.log(`   Expira:  ${new Date(creds.expiresAt).toLocaleDateString()}`)
   console.log(`\n🚀 Ya podés usar el servidor MCP de BotUyo.\n`)
+  process.exit(0)
 }
 
 // ── Prompts ───────────────────────────────────────────────────────────────────

@@ -3,9 +3,8 @@
  * All MCP tools go through this client.
  *
  * Uses a JWT token directly (obtained via `npx @botuyo/mcp login`).
+ * Requires Node 18+ (native fetch).
  */
-
-import fetch, { Response } from 'node-fetch'
 
 export interface BotuyoClientConfig {
   apiUrl: string
@@ -25,6 +24,12 @@ export class BotuyoApiClient {
 
   constructor(config: BotuyoClientConfig) {
     this.config = config
+  }
+
+  /** Hot-swap the JWT token (used by switch_tenant) */
+  setToken(token: string) {
+    this.config = { ...this.config, token }
+    this.authInfo = null // reset cached auth info
   }
 
   /** Verify the stored JWT is still valid by calling GET /api/auth/me */

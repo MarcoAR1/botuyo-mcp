@@ -15,6 +15,11 @@ import { UPSERT_STAGE_TOOL, upsertStageHandler } from './upsert_stage.js'
 import { LIST_TOOLS_TOOL, listToolsHandler } from './list_available_tools.js'
 import { UPDATE_ENABLED_TOOLS_TOOL, updateEnabledToolsHandler } from './update_enabled_tools.js'
 import { PUBLISH_AGENT_TOOL, publishAgentHandler } from './publish_agent.js'
+import { SWITCH_TENANT_TOOL, switchTenantHandler } from './switch_tenant.js'
+import { EXPORT_AGENT_JSON_TOOL, exportAgentJsonHandler } from './export_agent_json.js'
+import { IMPORT_AGENT_JSON_TOOL, importAgentJsonHandler } from './import_agent_json.js'
+import { LIST_TEMPLATES_TOOL, listTemplatesHandler } from './list_templates.js'
+import { CREATE_FROM_TEMPLATE_TOOL, createFromTemplateHandler } from './create_from_template.js'
 
 export const ALL_TOOLS: Tool[] = [
   LIST_AGENTS_TOOL,
@@ -26,6 +31,11 @@ export const ALL_TOOLS: Tool[] = [
   LIST_TOOLS_TOOL,
   UPDATE_ENABLED_TOOLS_TOOL,
   PUBLISH_AGENT_TOOL,
+  SWITCH_TENANT_TOOL,
+  EXPORT_AGENT_JSON_TOOL,
+  IMPORT_AGENT_JSON_TOOL,
+  LIST_TEMPLATES_TOOL,
+  CREATE_FROM_TEMPLATE_TOOL,
 ]
 
 export type ToolHandler = (client: BotuyoApiClient, args: Record<string, unknown>) => Promise<unknown>
@@ -40,4 +50,9 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
   list_available_tools: listToolsHandler,
   update_enabled_tools: updateEnabledToolsHandler,
   publish_agent: publishAgentHandler,
+  switch_tenant: switchTenantHandler,
+  export_agent_json: exportAgentJsonHandler,
+  import_agent_json: importAgentJsonHandler,
+  list_templates: listTemplatesHandler,
+  create_from_template: createFromTemplateHandler,
 }

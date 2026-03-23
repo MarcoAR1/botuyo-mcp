@@ -21,7 +21,7 @@ import { execSync } from 'child_process'
 import { readCredentials, saveCredentials, BotuyoCredentials } from './credentials.js'
 import os from 'os'
 
-const ADMIN_URL = process.env.BOTUYO_ADMIN_URL || 'https://admin.botuyo.com'
+const ADMIN_URL = process.env.BOTUYO_ADMIN_URL || 'https://botuyo.com'
 const API_URL = process.env.BOTUYO_API_URL || 'https://api.botuyo.com'
 
 export async function runAuth(args: string[]): Promise<void> {
@@ -90,6 +90,7 @@ export async function runAuth(args: string[]): Promise<void> {
   console.log(`   Email:   ${creds.email || '(no disponible)'}`)
   console.log(`   Expira:  ${new Date(creds.expiresAt).toLocaleDateString()}`)
   console.log(`\n🚀 Ya podés usar el servidor MCP de BotUyo.\n`)
+  process.exit(0)
 }
 
 // ── Local callback server ─────────────────────────────────────────────────────
@@ -108,14 +109,25 @@ function startCallbackServer(): Promise<{ port: number; waitForCode: Promise<str
         const code = url.searchParams.get('code')
 
         const html = code
-          ? `<html><body style="font-family:sans-serif;text-align:center;padding:80px">
-              <h2>✅ BotUyo CLI Autorizado</h2>
-              <p>Podés cerrar esta pestaña y volver a la terminal.</p>
-             </body></html>`
-          : `<html><body style="font-family:sans-serif;text-align:center;padding:80px">
-              <h2>❌ Autorización fallida</h2>
-              <p>No se recibió el código. Intentá de nuevo.</p>
-             </body></html>`
+          ? `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+             <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+             <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f8fafc,#eef2ff,#f8fafc);color:#0f172a}
+             .card{text-align:center;max-width:420px;padding:48px 32px;background:#fff;border-radius:20px;border:1px solid #e2e8f0;box-shadow:0 25px 50px rgba(0,0,0,.08)}
+             .icon{width:64px;height:64px;margin:0 auto 20px;background:#f0fdf4;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px}
+             h2{font-size:22px;font-weight:700;margin-bottom:8px}p{color:#64748b;font-size:15px;line-height:1.6}
+             .badge{display:inline-block;margin-top:16px;background:#eef2ff;color:#4f46e5;padding:6px 16px;border-radius:8px;font-size:13px;font-weight:600}</style></head>
+             <body><div class="card"><div class="icon">✅</div><h2>BotUyo CLI Autorizado</h2>
+             <p>Podés cerrar esta pestaña y volver a la terminal.</p>
+             <span class="badge">Sesión activa</span></div></body></html>`
+          : `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+             <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+             <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f8fafc,#fff1f2,#f8fafc);color:#0f172a}
+             .card{text-align:center;max-width:420px;padding:48px 32px;background:#fff;border-radius:20px;border:1px solid #e2e8f0;box-shadow:0 25px 50px rgba(0,0,0,.08)}
+             .icon{width:64px;height:64px;margin:0 auto 20px;background:#fef2f2;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px}
+             h2{font-size:22px;font-weight:700;margin-bottom:8px}p{color:#64748b;font-size:15px;line-height:1.6}
+             code{background:#f1f5f9;padding:2px 8px;border-radius:4px;font-size:13px}</style></head>
+             <body><div class="card"><div class="icon">❌</div><h2>Autorización fallida</h2>
+             <p>No se recibió el código. Ejecutá <code>npx @botuyo/mcp auth</code> de nuevo.</p></div></body></html>`
 
         res.writeHead(200, { 'Content-Type': 'text/html' })
         res.end(html)
