@@ -103,9 +103,9 @@ Requires role: owner, admin, or developer.`,
           },
           voice: {
             type: 'object',
-            description: 'Voice config (profile display name + widgetCallEnabled toggle). liveModel is admin-only and preserved.',
+            description: 'Voice config. liveModel is admin-only and preserved.',
             properties: {
-              profile: { type: 'string', description: 'Voice profile display name (e.g. "Coral Cálida")' },
+              profile: { type: 'string', description: 'Voice profile. Accepts display name, ID, or legacy Gemini name. Valid: "Profesional Femenina" (kore), "Amigable Femenina" (aoede), "Serena Femenina" (leda), "Energético Masculino" (puck), "Formal Masculino" (charon), "Cálido Masculino" (fenrir), "Neutro Profesional" (orus), "Suave Neutral" (zephyr).' },
               widgetCallEnabled: { type: 'boolean', description: 'Whether voice calls are enabled in the widget' }
             }
           },

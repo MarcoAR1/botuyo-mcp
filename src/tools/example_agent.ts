@@ -243,13 +243,24 @@ export async function exampleAgentHandler() {
 
     // ─── VOICE CONFIGURATION ───────────────────────────────────────
     voice: {
-      profile: 'Coral Cálida',
+      profile: 'Profesional Femenina',
       widgetCallEnabled: true
     },
     _voice_doc: {
-      profile: 'Display name of a voice profile. Use list_voice_profiles to see options. Resolved to internal ID on save.',
+      profile: 'Display name of a voice profile. Resolved to internal ID on save. Use one from the catalog below.',
       widgetCallEnabled: 'Boolean. Enables the phone icon in the widget for browser-based voice calls.',
-      _adminOnly: 'liveModel (e.g. "gemini-2.0-flash-live-001") is admin-only and auto-preserved on import.'
+      _adminOnly: 'liveModel (e.g. "gemini-2.0-flash-live-001") is admin-only and auto-preserved on import.',
+      _availableProfiles: [
+        { displayName: 'Profesional Femenina', id: 'kore', gender: 'F', tone: 'Cálida', description: 'Voz femenina cálida y profesional' },
+        { displayName: 'Amigable Femenina', id: 'aoede', gender: 'F', tone: 'Amigable', description: 'Voz femenina joven y amigable' },
+        { displayName: 'Serena Femenina', id: 'leda', gender: 'F', tone: 'Serena', description: 'Voz femenina suave y tranquilizadora' },
+        { displayName: 'Energético Masculino', id: 'puck', gender: 'M', tone: 'Energético', description: 'Voz masculina joven y dinámica' },
+        { displayName: 'Formal Masculino', id: 'charon', gender: 'M', tone: 'Formal', description: 'Voz masculina grave y profesional' },
+        { displayName: 'Cálido Masculino', id: 'fenrir', gender: 'M', tone: 'Cálido', description: 'Voz masculina amigable y cercana' },
+        { displayName: 'Neutro Profesional', id: 'orus', gender: 'NB', tone: 'Profesional', description: 'Voz neutral y profesional' },
+        { displayName: 'Suave Neutral', id: 'zephyr', gender: 'NB', tone: 'Suave', description: 'Voz suave y relajante' }
+      ],
+      _importNote: 'Podés pasar el displayName (ej: "Profesional Femenina"), el ID interno (ej: "kore"), o el nombre legacy Gemini (ej: "Kore"). Todos se resuelven al mismo perfil.'
     },
 
     // ─── PER-CHANNEL PROMPTS ───────────────────────────────────────
@@ -267,17 +278,8 @@ export async function exampleAgentHandler() {
 
     // ─── READ-ONLY FIELDS (visible in export, ignored on import) ──
     _readOnlyFields: {
-      apiKey: 'agent_cce16580e147497ba5a35ff4c4947066',
+      apiKey: 'agent_xxxxxxxxxxxxxxxxxxxxxxxxxxxx',
       _doc: 'The agent API key is auto-generated and shown in export. Use it for external integrations (widget embed, API calls). Cannot be modified via import.'
-    },
-
-    // ─── ADMIN-ONLY FIELDS (never exposed via MCP) ─────────────────
-    _adminOnlyFields: {
-      model: 'gemini-2.0-flash',
-      temperature: 0.7,
-      summaryThreshold: 15,
-      'voice.liveModel': 'gemini-2.0-flash-live-001',
-      _doc: 'These fields are internal platform settings. Only editable via the admin panel. On import, they are preserved from the existing agent config.'
     }
   }
 
