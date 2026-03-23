@@ -20,6 +20,7 @@ import { EXPORT_AGENT_JSON_TOOL, exportAgentJsonHandler } from './export_agent_j
 import { IMPORT_AGENT_JSON_TOOL, importAgentJsonHandler } from './import_agent_json.js'
 import { LIST_TEMPLATES_TOOL, listTemplatesHandler } from './list_templates.js'
 import { CREATE_FROM_TEMPLATE_TOOL, createFromTemplateHandler } from './create_from_template.js'
+import { EXAMPLE_AGENT_TOOL, exampleAgentHandler } from './example_agent.js'
 
 export const ALL_TOOLS: Tool[] = [
   LIST_AGENTS_TOOL,
@@ -36,6 +37,7 @@ export const ALL_TOOLS: Tool[] = [
   IMPORT_AGENT_JSON_TOOL,
   LIST_TEMPLATES_TOOL,
   CREATE_FROM_TEMPLATE_TOOL,
+  EXAMPLE_AGENT_TOOL,
 ]
 
 export type ToolHandler = (client: BotuyoApiClient, args: Record<string, unknown>) => Promise<unknown>
@@ -55,4 +57,5 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
   import_agent_json: importAgentJsonHandler,
   list_templates: listTemplatesHandler,
   create_from_template: createFromTemplateHandler,
+  example_agent: exampleAgentHandler as ToolHandler,
 }
