@@ -5,12 +5,13 @@ export const EXAMPLE_AGENT_TOOL: Tool = {
   description: `Returns a complete, documented example of an agent configuration JSON with ALL possible fields explained.
 
 Use this as a reference when creating or editing agents. Every field includes a description of what it does,
-its type, and valid values. This is a read-only reference tool — it doesn't create or modify anything.
+its type, valid values, and conditions. This is a read-only reference tool — it doesn't create or modify anything.
 
 Useful for:
 - New users learning the agent config structure
 - Checking available fields before using import_agent_json
-- Understanding how stages, connections, channelFlows, and tools work together`,
+- Understanding how stages, connections, channelFlows, and tools work together
+- Learning the widget theming system (cssVariables, darkCssVariables, animations, effects)`,
   inputSchema: {
     type: 'object',
     properties: {},
@@ -19,10 +20,16 @@ Useful for:
 }
 
 export async function exampleAgentHandler() {
-  const example = {
-    _comment: 'This is a complete reference of all agent configuration fields. Use export_agent_json to get your real config, edit it, and import_agent_json to apply.',
+  const reference = {
+    // ═══════════════════════════════════════════════════════════════════
+    // AGENT CONFIGURATION REFERENCE
+    // All fields documented with types, valid values, and conditions.
+    // Use export_agent_json → edit → import_agent_json workflow.
+    // ═══════════════════════════════════════════════════════════════════
 
+    // ─── CORE IDENTITY ─────────────────────────────────────────────
     name: 'Mi Agente de Ejemplo',
+    _name_doc: 'Required. String. Display name shown in widget header and admin panel.',
 
     identity: {
       tone: 'Amigable, profesional y empático. Usá un tono cercano pero respetuoso.',
@@ -30,90 +37,81 @@ export async function exampleAgentHandler() {
       objective: 'Asistir a los usuarios con consultas sobre productos, reservas y soporte general.',
       customInstructions: 'Instrucciones adicionales libres. Pueden incluir reglas de negocio, restricciones, o comportamiento especial.'
     },
+    _identity_doc: {
+      tone: 'Optional. String. Personality/voice of the agent. Included in every system prompt.',
+      language: 'Required. String. BCP-47 locale (es-AR, en-US, pt-BR, etc.). Controls response language.',
+      objective: 'Optional. String. High-level goal. Helps the LLM stay on-topic.',
+      customInstructions: 'Optional. String. Free-form rules injected into system prompt. Can include markdown, lists, etc.'
+    },
 
+    // ─── CONVERSATIONAL FLOW (STAGES + CONNECTIONS) ────────────────
     stages: [
       {
         id: 'greeting',
         name: 'Saludo Inicial',
         type: 'start',
-        instruction: 'Saludá al usuario de forma cálida y preguntale en qué lo podés ayudar. Si ya hay historial, no repitas el saludo.',
-        tools: [],
-        _types: 'type can be: start, action, router, end. Only 1 start allowed.'
+        instruction: 'Saludá al usuario de forma cálida y preguntale en qué lo podés ayudar.',
+        tools: []
       },
       {
         id: 'guest_discovery',
         name: 'Descubrimiento',
         type: 'action',
-        instruction: 'Hacé preguntas para entender las necesidades del usuario: qué busca, fechas, presupuesto, etc.',
-        tools: ['search_accommodations', 'search_knowledge_base'],
-        _note: 'tools[] lists tool IDs available in THIS stage. They must also be in enabledTools[].'
+        instruction: 'Hacé preguntas para entender las necesidades del usuario.',
+        tools: ['search_accommodations', 'search_knowledge_base']
       },
       {
         id: 'guest_booking',
         name: 'Reserva',
         type: 'action',
-        instruction: 'Guiá al usuario por el proceso de reserva. Mostrá opciones de pago y confirmá los datos.',
+        instruction: 'Guiá al usuario por el proceso de reserva.',
         tools: ['create_pre_reservation', 'get_accommodation_details']
       },
       {
         id: 'farewell',
         name: 'Despedida',
         type: 'end',
-        instruction: 'Despedite amablemente. Agradecé la conversación y ofrecé ayuda futura.',
+        instruction: 'Despedite amablemente.',
         tools: []
       }
     ],
+    _stages_doc: {
+      id: 'Required. Unique string identifier. Referenced by connections.',
+      name: 'Optional. Human-readable label for admin UI.',
+      type: 'Required. One of: "start" (exactly 1), "action" (unlimited), "router" (decision point), "end" (at least 1).',
+      instruction: 'Required. System prompt for this stage. The LLM follows this when the stage is active.',
+      tools: 'Optional. Array of tool IDs available in THIS stage. Must be a subset of enabledTools[].'
+    },
 
     connections: [
-      {
-        id: 'c1',
-        from: 'greeting',
-        to: 'guest_discovery',
-        type: 'default',
-        _note: 'Default connections always transition. No condition needed.'
-      },
-      {
-        id: 'c2',
-        from: 'guest_discovery',
-        to: 'guest_booking',
-        type: 'conditional',
-        condition: 'El usuario expresó interés en reservar una opción específica',
-        _note: 'Conditional connections: the LLM evaluates the condition to decide if to transition.'
-      },
-      {
-        id: 'c3',
-        from: 'guest_booking',
-        to: 'farewell',
-        type: 'conditional',
-        condition: 'La reserva fue completada exitosamente o el usuario quiere terminar'
-      },
-      {
-        id: 'c_disc_farewell',
-        from: 'guest_discovery',
-        to: 'farewell',
-        type: 'conditional',
-        condition: 'El usuario quiere despedirse sin reservar'
-      }
+      { id: 'c1', from: 'greeting', to: 'guest_discovery', type: 'default' },
+      { id: 'c2', from: 'guest_discovery', to: 'guest_booking', type: 'conditional', condition: 'El usuario quiere reservar' },
+      { id: 'c3', from: 'guest_booking', to: 'farewell', type: 'conditional', condition: 'Reserva completada' },
+      { id: 'c4', from: 'guest_discovery', to: 'farewell', type: 'conditional', condition: 'El usuario quiere despedirse' }
     ],
+    _connections_doc: {
+      id: 'Required. Unique string identifier.',
+      from: 'Required. Stage ID where the edge originates.',
+      to: 'Required. Stage ID where the edge points.',
+      type: '"default" = always transitions (no AI evaluation). "conditional" = LLM evaluates the condition string.',
+      condition: 'Required for "conditional" type. Natural language evaluated by the LLM to decide if to transition.'
+    },
 
+    // ─── CHANNEL FLOWS (Per-Channel Overrides) ─────────────────────
     channelFlows: {
       phone: {
         connections: [
           { id: 'phone_c1', from: 'greeting', to: 'guest_discovery', type: 'default' },
           { id: 'phone_c2', from: 'guest_discovery', to: 'farewell', type: 'conditional', condition: 'El usuario quiere terminar' }
-        ],
-        _note: 'ChannelFlows override the default connections for a specific channel. Here, phone skips booking (tools not phone-compatible).'
-      },
-      whatsapp: {
-        connections: [
-          { id: 'wa_c1', from: 'greeting', to: 'guest_discovery', type: 'default' },
-          { id: 'wa_c2', from: 'guest_discovery', to: 'guest_booking', type: 'conditional', condition: 'Quiere reservar' },
-          { id: 'wa_c3', from: 'guest_booking', to: 'farewell', type: 'conditional', condition: 'Reserva completada' }
-        ],
-        _note: 'If a channel is NOT in channelFlows, it uses the default connections array.'
+        ]
       }
     },
+    _channelFlows_doc: 'Optional. Object keyed by channel name. Each overrides the default connections[] for that channel. ' +
+      'Use this when a channel has different flow paths (e.g. phone skips booking because tools like create_pre_reservation are text-only). ' +
+      'If a channel is NOT listed here, it uses the default connections array. ' +
+      'Runtime filters tools per-channel automatically, so text-only tools simply won\'t load on phone.',
 
+    // ─── TOOLS & CHANNELS ──────────────────────────────────────────
     enabledTools: [
       'search_accommodations',
       'get_accommodation_details',
@@ -122,67 +120,171 @@ export async function exampleAgentHandler() {
       'identify_user_context',
       'update_user_profile'
     ],
-    _enabledToolsNote: 'All tools the agent can use across all stages. Per-stage tools[] must be a subset of this. Use list_available_tools to see all options.',
+    _enabledTools_doc: 'Array of tool IDs the agent can use. Per-stage tools[] must be a subset. ' +
+      'Use list_available_tools to see all options with descriptions. ' +
+      'Tools auto-sync: any tool referenced in a stage.tools[] is automatically added to enabledTools on save.',
 
     channels: ['web', 'whatsapp', 'phone'],
-    _channelsNote: 'Valid channels: web, whatsapp, telegram, discord, instagram, phone. Runtime filters tools by channel compatibility.',
+    _channels_doc: 'Array of channels the agent is published on. Valid: "web", "whatsapp", "telegram", "discord", "instagram", "phone". ' +
+      'Runtime filters tools by channel compatibility — text-only tools (e.g. create_pre_reservation) won\'t load on phone. ' +
+      'You can have phone + text-only tools as long as your channelFlows.phone never reaches stages with those tools.',
 
+    // ─── WIDGET CONFIGURATION ──────────────────────────────────────
     widgetConfig: {
-      cssVariables: {
-        primary: '210 100% 50%',
-        'primary-foreground': '0 0% 100%',
-        background: '222 47% 6%',
-        foreground: '210 40% 98%',
-        muted: '217 33% 17%',
-        'muted-foreground': '215 20% 65%',
-        accent: '210 100% 50%',
-        'accent-foreground': '0 0% 100%',
-        border: '217 33% 17%',
-        ring: '210 100% 50%',
-        'chat-bubble-user': '210 100% 50%',
-        'chat-bubble-user-foreground': '0 0% 100%',
-        'chat-bubble-bot': '217 33% 17%',
-        'chat-bubble-bot-foreground': '210 40% 98%',
-        radius: '0.75rem',
-        _note: 'HSL values WITHOUT the hsl() wrapper. Widget uses these as CSS custom properties.'
-      },
+      // -- Appearance --
       welcomeMessage: '¡Hola! 👋 Soy tu asistente virtual. ¿En qué puedo ayudarte?',
       placeholder: 'Escribí tu mensaje...',
-      position: 'bottom-right'
+      position: 'bottom-right',
+      headerText: 'MI AGENTE 🤖',
+      starterPrompt: '¿Necesitas ayuda?',
+      defaultLocale: 'es',
+      avatarScale: 1.2,
+      showPromptAvatar: true,
+
+      // -- 3D Avatar for Voice Calls --
+      avatar3dUrl: 'https://example.com/model.glb',
+
+      // -- Light Mode CSS Variables --
+      cssVariables: {
+        // Brand colors (preserved in both light AND dark mode)
+        primary: '210 100% 50%',
+        primaryForeground: '0 0% 100%',
+
+        // Light mode surfaces
+        background: '0 0% 100%',
+        foreground: '210 20% 12%',
+        card: '0 0% 100%',
+        cardForeground: '210 20% 12%',
+        muted: '210 20% 96%',
+        mutedForeground: '210 10% 45%',
+        border: '210 20% 90%',
+        destructive: '0 84% 60%',
+
+        // Sizing
+        radius: '0.75rem',
+        windowBorderRadius: '24px',
+        launcherBorderRadius: '50%',
+        windowHeight: '700px',
+        windowBottom: '24px',
+
+        // Spacing (design system)
+        spacing1: '0.25rem',
+        spacing2: '0.5rem',
+        spacing3: '0.75rem',
+        spacing4: '1rem',
+        spacing5: '1.25rem',
+        spacing6: '1.5rem',
+        spacing7: '1.75rem',
+        spacing8: '2rem'
+      },
+
+      // -- Dark Mode CSS Variables (override surfaces, brand stays) --
+      darkCssVariables: {
+        background: '222 47% 6%',
+        foreground: '210 40% 98%',
+        card: '217 33% 12%',
+        cardForeground: '210 40% 98%',
+        muted: '217 33% 17%',
+        mutedForeground: '215 20% 65%',
+        border: '217 33% 17%',
+        destructive: '0 63% 31%'
+      },
+
+      // -- Animations --
+      animations: {
+        enabled: true,
+        messageEntry: 'spring',
+        typingIndicator: 'dots',
+        buttonEffects: true,
+        smoothScroll: true,
+        windowTransitions: true,
+        launcherPulse: true,
+        speedMultiplier: 1.0,
+        staggerDelay: 50
+      },
+
+      // -- Visual Effects --
+      effects: {
+        glassmorphism: true,
+        gradients: true,
+        softShadows: true,
+        glowEffects: true,
+        shimmerLoading: true,
+        hoverLift: true,
+        particles: false,
+        soundEffects: false,
+        hapticFeedback: true
+      }
+    },
+    _widgetConfig_doc: {
+      cssVariables: 'HSL values WITHOUT the hsl() wrapper. "primary" and "primaryForeground" are your brand colors — they are preserved in both light and dark mode.',
+      darkCssVariables: 'Optional. Overrides ONLY the surface colors (background, card, muted, border, etc.) for dark mode. ' +
+        'primary/primaryForeground from cssVariables are ALWAYS preserved. Dark mode activates automatically when the host page uses prefers-color-scheme: dark.',
+      avatar3dUrl: 'Optional. URL to a .glb/.vrm 3D model. Displayed as the voice call avatar orb instead of the 2D image.',
+      avatarScale: 'Optional. Number (default 1). Controls avatar zoom. 1.2 = 20% larger.',
+      showPromptAvatar: 'Optional. Boolean. Shows a mini avatar next to the starter prompt bubble.',
+      defaultLocale: 'Optional. "es" | "en" | "pt" | "fr". Sets the widget UI language.',
+      starterPrompt: 'Optional. String. Small bubble shown when the widget is closed to invite interaction.',
+      animations: {
+        enabled: 'Master toggle. false disables ALL animations.',
+        messageEntry: '"slide" | "fade" | "scale" | "spring" | "none". How new messages appear.',
+        typingIndicator: '"dots" | "wave" | "pulse" | "none". Style of the "agent is typing" indicator.',
+        speedMultiplier: 'Number. 0.5 = 2x faster, 2 = 2x slower. Default: 1.',
+        staggerDelay: 'Number (ms). Delay between sequential message animations. Default: 50.'
+      },
+      effects: {
+        glassmorphism: 'Frosted glass blur on header and overlays.',
+        gradients: 'Gradient backgrounds on cards and surfaces.',
+        particles: 'Confetti/particles on certain actions (e.g. booking confirmed). Off by default.',
+        soundEffects: 'UI sounds on send/receive. Off by default.',
+        hapticFeedback: 'Vibration on mobile when interacting. On by default.'
+      }
     },
 
+    // ─── VOICE CONFIGURATION ───────────────────────────────────────
     voice: {
       profile: 'Coral Cálida',
-      widgetCallEnabled: true,
-      _note: 'profile is the display name of a voice profile (use list_voice_profiles to see options). liveModel is admin-only and auto-preserved.'
+      widgetCallEnabled: true
+    },
+    _voice_doc: {
+      profile: 'Display name of a voice profile. Use list_voice_profiles to see options. Resolved to internal ID on save.',
+      widgetCallEnabled: 'Boolean. Enables the phone icon in the widget for browser-based voice calls.',
+      _adminOnly: 'liveModel (e.g. "gemini-2.0-flash-live-001") is admin-only and auto-preserved on import.'
     },
 
+    // ─── PER-CHANNEL PROMPTS ───────────────────────────────────────
     channelPrompts: {
       whatsapp: 'Recordá que estás hablando por WhatsApp. Usá mensajes cortos y directos. Evitá markdown complejo.',
-      phone: 'Estás en una llamada telefónica. Hablá de forma natural, sin usar formato visual. Sé conciso.',
-      _note: 'Per-channel system prompt overrides. Merged into the base prompt when that channel is active.'
+      phone: 'Estás en una llamada telefónica. Hablá de forma natural, sin usar formato visual. Sé conciso.'
     },
+    _channelPrompts_doc: 'Optional. Object keyed by channel name. These prompts are MERGED into the base system prompt when that channel is active. ' +
+      'Use this to adapt the agent\'s behavior per channel (e.g. shorter messages on WhatsApp, no markdown on phone).',
 
+    // ─── KNOWLEDGE BASE ────────────────────────────────────────────
     knowledgeDocumentIds: ['doc_abc123', 'doc_def456'],
-    _knowledgeNote: 'MongoDB IDs of knowledge base documents for RAG. The agent will search these for context.',
+    _knowledgeDocumentIds_doc: 'Optional. Array of MongoDB IDs of knowledge base documents for RAG. ' +
+      'The agent will search these documents for context when the search_knowledge_base tool is invoked.',
 
+    // ─── READ-ONLY FIELDS (visible in export, ignored on import) ──
     _readOnlyFields: {
       apiKey: 'agent_cce16580e147497ba5a35ff4c4947066',
-      _note: 'apiKey is shown in export but cannot be modified via import. Used for external API integrations.'
+      _doc: 'The agent API key is auto-generated and shown in export. Use it for external integrations (widget embed, API calls). Cannot be modified via import.'
     },
 
+    // ─── ADMIN-ONLY FIELDS (never exposed via MCP) ─────────────────
     _adminOnlyFields: {
       model: 'gemini-2.0-flash',
       temperature: 0.7,
       summaryThreshold: 15,
       'voice.liveModel': 'gemini-2.0-flash-live-001',
-      _note: 'These fields are only editable via the admin panel, never via MCP import.'
+      _doc: 'These fields are internal platform settings. Only editable via the admin panel. On import, they are preserved from the existing agent config.'
     }
   }
 
   return {
     success: true,
-    data: example,
-    message: 'This is a complete reference of all agent configuration fields. Fields prefixed with _ are documentation-only and should be removed when using import_agent_json.'
+    data: reference,
+    message: 'Complete agent configuration reference. Fields prefixed with _ are documentation-only and should be removed when using import_agent_json. ' +
+      'Workflow: export_agent_json → edit local file → import_agent_json(filePath: "./agents/my-agent.json")'
   }
 }

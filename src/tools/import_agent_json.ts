@@ -50,15 +50,55 @@ Requires role: owner, admin, or developer.`,
           channels: { type: 'array', items: { type: 'string' }, description: 'Channels: web, whatsapp, phone, etc.' },
           widgetConfig: {
             type: 'object',
-            description: 'Widget appearance and behavior config',
+            description: 'Widget appearance, theming, animations, and behavior config',
             properties: {
               cssVariables: {
                 type: 'object',
-                description: 'CSS custom properties for widget theming. Keys are variable names (e.g. "primary", "background"), values are HSL values WITHOUT the hsl() wrapper (e.g. "210 100% 50%").'
+                description: 'Light mode CSS custom properties. Keys: primary, primaryForeground, background, foreground, card, cardForeground, muted, mutedForeground, border, destructive, radius, windowBorderRadius, launcherBorderRadius, windowHeight, windowBottom, spacing1-8. Values: HSL WITHOUT hsl() wrapper (e.g. "210 100% 50%").'
+              },
+              darkCssVariables: {
+                type: 'object',
+                description: 'Dark mode overrides. Same keys as cssVariables. primary/primaryForeground are preserved from light mode — only override surface colors (background, card, muted, border, etc.).'
               },
               welcomeMessage: { type: 'string', description: 'Initial greeting shown when widget opens' },
               placeholder: { type: 'string', description: 'Placeholder text in chat input' },
-              position: { type: 'string', description: 'Widget position: bottom-right, bottom-left, etc.' }
+              position: { type: 'string', enum: ['bottom-right', 'bottom-left'], description: 'Widget position' },
+              headerText: { type: 'string', description: 'Text shown in the widget header bar' },
+              starterPrompt: { type: 'string', description: 'Bubble text shown when widget is closed to invite interaction' },
+              defaultLocale: { type: 'string', enum: ['es', 'en', 'pt', 'fr'], description: 'Widget UI language' },
+              avatarScale: { type: 'number', description: 'Avatar zoom factor (default 1, e.g. 1.2 = 20% larger)' },
+              showPromptAvatar: { type: 'boolean', description: 'Show mini avatar next to starter prompt bubble' },
+              avatar3dUrl: { type: 'string', description: 'URL to .glb/.vrm 3D model for voice call avatar' },
+              animations: {
+                type: 'object',
+                description: 'Animation config',
+                properties: {
+                  enabled: { type: 'boolean', description: 'Master toggle for all animations' },
+                  messageEntry: { type: 'string', enum: ['slide', 'fade', 'scale', 'spring', 'none'] },
+                  typingIndicator: { type: 'string', enum: ['dots', 'wave', 'pulse', 'none'] },
+                  buttonEffects: { type: 'boolean' },
+                  smoothScroll: { type: 'boolean' },
+                  windowTransitions: { type: 'boolean' },
+                  launcherPulse: { type: 'boolean' },
+                  speedMultiplier: { type: 'number', description: '0.5 = faster, 2 = slower, default 1' },
+                  staggerDelay: { type: 'number', description: 'ms between sequential message animations, default 50' }
+                }
+              },
+              effects: {
+                type: 'object',
+                description: 'Visual effects config',
+                properties: {
+                  glassmorphism: { type: 'boolean', description: 'Frosted glass blur on headers' },
+                  gradients: { type: 'boolean', description: 'Gradient backgrounds on surfaces' },
+                  softShadows: { type: 'boolean' },
+                  glowEffects: { type: 'boolean', description: 'Glow effects on hover/focus' },
+                  shimmerLoading: { type: 'boolean' },
+                  hoverLift: { type: 'boolean', description: 'Lift effect on card hover' },
+                  particles: { type: 'boolean', description: 'Confetti on actions (default false)' },
+                  soundEffects: { type: 'boolean', description: 'UI sounds (default false)' },
+                  hapticFeedback: { type: 'boolean', description: 'Mobile vibration (default true)' }
+                }
+              }
             }
           },
           voice: {
