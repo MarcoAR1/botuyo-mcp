@@ -90,6 +90,17 @@ export class BotuyoApiClient {
     return this.handleResponse(res)
   }
 
+  /** Make an authenticated DELETE request */
+  async delete<T = any>(path: string): Promise<T> {
+    const res = await fetch(`${this.config.apiUrl}${path}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${this.config.token}`
+      }
+    })
+    return this.handleResponse(res)
+  }
+
   private async handleResponse(res: Response): Promise<any> {
     const json = await this.parseJson(res)
 
