@@ -22,6 +22,9 @@ import { LIST_TEMPLATES_TOOL, listTemplatesHandler } from './list_templates.js'
 import { CREATE_FROM_TEMPLATE_TOOL, createFromTemplateHandler } from './create_from_template.js'
 import { EXAMPLE_AGENT_TOOL, exampleAgentHandler } from './example_agent.js'
 import { DELETE_AGENT_TOOL, deleteAgentHandler } from './delete_agent.js'
+import { LIST_KNOWLEDGE_DOCS_TOOL, listKnowledgeDocsHandler } from './list_knowledge_docs.js'
+import { DELETE_KNOWLEDGE_DOC_TOOL, deleteKnowledgeDocHandler } from './delete_knowledge_doc.js'
+import { ASSOCIATE_KNOWLEDGE_TOOL, associateKnowledgeHandler } from './associate_knowledge.js'
 
 export const ALL_TOOLS: Tool[] = [
   LIST_AGENTS_TOOL,
@@ -40,6 +43,9 @@ export const ALL_TOOLS: Tool[] = [
   CREATE_FROM_TEMPLATE_TOOL,
   EXAMPLE_AGENT_TOOL,
   DELETE_AGENT_TOOL,
+  LIST_KNOWLEDGE_DOCS_TOOL,
+  DELETE_KNOWLEDGE_DOC_TOOL,
+  ASSOCIATE_KNOWLEDGE_TOOL,
 ]
 
 export type ToolHandler = (client: BotuyoApiClient, args: Record<string, unknown>) => Promise<unknown>
@@ -61,4 +67,7 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
   create_from_template: createFromTemplateHandler,
   example_agent: exampleAgentHandler as ToolHandler,
   delete_agent: deleteAgentHandler,
+  list_knowledge_documents: listKnowledgeDocsHandler,
+  delete_knowledge_document: deleteKnowledgeDocHandler,
+  associate_knowledge_to_agent: associateKnowledgeHandler,
 }
