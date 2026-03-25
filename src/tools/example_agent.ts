@@ -61,6 +61,13 @@ export async function exampleAgentHandler() {
         tools: ['search_accommodations', 'search_knowledge_base']
       },
       {
+        id: 'intent_router',
+        name: 'Router de Intención',
+        type: 'router',
+        instruction: 'Analizá la intención del usuario y dirigilo al flujo correcto. No interactúes directamente, solo evaluá las condiciones de salida.',
+        tools: []
+      },
+      {
         id: 'guest_booking',
         name: 'Reserva',
         type: 'action',
@@ -71,23 +78,58 @@ export async function exampleAgentHandler() {
         id: 'farewell',
         name: 'Despedida',
         type: 'end',
-        instruction: 'Despedite amablemente.',
+        instruction: 'Despedite amablemente y preguntá si necesita algo más.',
         tools: []
       }
     ],
     _stages_doc: {
       id: 'Required. Unique string identifier. Referenced by connections.',
-      name: 'Optional. Human-readable label for admin UI.',
-      type: 'Required. One of: "start" (exactly 1), "action" (unlimited), "router" (decision point), "end" (at least 1).',
+      name: 'Optional. Human-readable label for admin UI and visual graph.',
+      type: 'Required. One of: "start", "action", "router", "end". See _stageTypes_doc for detailed explanation.',
       instruction: 'Required. System prompt for this stage. The LLM follows this when the stage is active.',
       tools: 'Optional. Array of tool IDs available in THIS stage. Must be a subset of enabledTools[].'
+    },
+    _stageTypes_doc: {
+      start: {
+        purpose: 'Entry point of the conversation. The agent begins here when a new conversation starts.',
+        behavior: 'Executes its instruction once at the start, then transitions to the next stage via connections.',
+        useCases: 'Greeting the user, collecting initial context, setting the tone of the conversation.',
+        cardinality: 'Exactly 1 per agent. Every agent MUST have exactly one start stage.',
+        bestPractices: 'Keep it simple — greet the user and ask how you can help. Avoid heavy tool usage here.'
+      },
+      action: {
+        purpose: 'The workhorse stage. Executes tools, interacts with the user, and performs tasks.',
+        behavior: 'The LLM follows the instruction, can call tools assigned to this stage, and engages in multi-turn conversation until a transition condition is met.',
+        useCases: 'Searching products, collecting user data, processing orders, answering questions, executing business logic.',
+        cardinality: 'Unlimited. You can have as many action stages as needed.',
+        bestPractices: 'Assign only the tools relevant to this stage\'s purpose. Write clear instructions about what the agent should accomplish before transitioning.'
+      },
+      router: {
+        purpose: 'Decision point that evaluates the user\'s intent and directs the flow to different stages based on conditions.',
+        behavior: 'The LLM analyzes the conversation context and evaluates the conditional connections to determine which stage to transition to. It does NOT interact with the user directly — it silently routes.',
+        useCases: 'Intent classification (sales vs support vs FAQ), language detection, user type routing (new vs returning), priority triage.',
+        cardinality: 'Unlimited. Use as many routers as needed for complex branching flows.',
+        bestPractices: 'Keep router instructions focused on evaluation criteria. All outgoing connections should be "conditional" type. Don\'t assign tools — routers should be lightweight decision makers.'
+      },
+      end: {
+        purpose: 'Closing stage. Wraps up the conversation and says goodbye.',
+        behavior: 'Executes its instruction (farewell message) and marks the conversation as completed. No further transitions occur.',
+        useCases: 'Saying goodbye, sending a summary, confirming a completed action, asking for feedback.',
+        cardinality: 'At least 1. You need at least one end stage, but can have multiple (e.g. one for success, one for cancellation).',
+        bestPractices: 'Keep it brief and warm. Optionally ask if the user needs anything else before closing.'
+      },
+      _summary: 'A typical flow: start → action(s) → router → action(s) → end. ' +
+        'The router is optional — simple agents can go start → action → end with conditional connections. ' +
+        'Use routers when you have 3+ possible paths from a single decision point.'
     },
 
     connections: [
       { id: 'c1', from: 'greeting', to: 'guest_discovery', type: 'default' },
-      { id: 'c2', from: 'guest_discovery', to: 'guest_booking', type: 'conditional', condition: 'El usuario quiere reservar' },
-      { id: 'c3', from: 'guest_booking', to: 'farewell', type: 'conditional', condition: 'Reserva completada' },
-      { id: 'c4', from: 'guest_discovery', to: 'farewell', type: 'conditional', condition: 'El usuario quiere despedirse' }
+      { id: 'c2', from: 'guest_discovery', to: 'intent_router', type: 'default' },
+      { id: 'c3', from: 'intent_router', to: 'guest_booking', type: 'conditional', condition: 'El usuario quiere reservar un alojamiento' },
+      { id: 'c4', from: 'intent_router', to: 'farewell', type: 'conditional', condition: 'El usuario quiere despedirse o no necesita más ayuda' },
+      { id: 'c5', from: 'intent_router', to: 'guest_discovery', type: 'conditional', condition: 'El usuario necesita más información antes de decidir' },
+      { id: 'c6', from: 'guest_booking', to: 'farewell', type: 'conditional', condition: 'Reserva completada o cancelada' }
     ],
     _connections_doc: {
       id: 'Required. Unique string identifier.',
