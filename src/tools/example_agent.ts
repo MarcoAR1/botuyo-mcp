@@ -289,20 +289,19 @@ export async function exampleAgentHandler() {
       widgetCallEnabled: true
     },
     _voice_doc: {
-      profile: 'Display name of a voice profile. Resolved to internal ID on save. Use one from the catalog below.',
+      profile: 'Display name of a voice profile. Resolved to internal ID on save. Use one from the list below.',
       widgetCallEnabled: 'Boolean. Enables the phone icon in the widget for browser-based voice calls.',
-      _adminOnly: 'liveModel (e.g. "gemini-2.0-flash-live-001") is admin-only and auto-preserved on import.',
       _availableProfiles: [
-        { displayName: 'Profesional Femenina', id: 'kore', gender: 'F', tone: 'Cálida', description: 'Voz femenina cálida y profesional' },
-        { displayName: 'Amigable Femenina', id: 'aoede', gender: 'F', tone: 'Amigable', description: 'Voz femenina joven y amigable' },
-        { displayName: 'Serena Femenina', id: 'leda', gender: 'F', tone: 'Serena', description: 'Voz femenina suave y tranquilizadora' },
-        { displayName: 'Energético Masculino', id: 'puck', gender: 'M', tone: 'Energético', description: 'Voz masculina joven y dinámica' },
-        { displayName: 'Formal Masculino', id: 'charon', gender: 'M', tone: 'Formal', description: 'Voz masculina grave y profesional' },
-        { displayName: 'Cálido Masculino', id: 'fenrir', gender: 'M', tone: 'Cálido', description: 'Voz masculina amigable y cercana' },
-        { displayName: 'Neutro Profesional', id: 'orus', gender: 'NB', tone: 'Profesional', description: 'Voz neutral y profesional' },
-        { displayName: 'Suave Neutral', id: 'zephyr', gender: 'NB', tone: 'Suave', description: 'Voz suave y relajante' }
+        'Profesional Femenina',
+        'Amigable Femenina',
+        'Serena Femenina',
+        'Energético Masculino',
+        'Formal Masculino',
+        'Cálido Masculino',
+        'Neutro Profesional',
+        'Suave Neutral'
       ],
-      _importNote: 'Podés pasar el displayName (ej: "Profesional Femenina"), el ID interno (ej: "kore"), o el nombre legacy Gemini (ej: "Kore"). Todos se resuelven al mismo perfil.'
+      _importNote: 'Pasá el nombre del perfil tal cual aparece en la lista (ej: "Profesional Femenina"). Se resuelve automáticamente al ID interno.'
     },
 
     // ─── PER-CHANNEL PROMPTS ───────────────────────────────────────
