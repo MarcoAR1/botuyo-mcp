@@ -43,8 +43,8 @@ Requires role: owner, admin, or developer.`,
               customInstructions: { type: 'string' }
             }
           },
-          stages: { type: 'array', description: 'Array of stage objects with id, name, type, instruction' },
-          connections: { type: 'array', description: 'Array of connection edges: { id, from, to, type, condition? }' },
+          stages: { type: 'array', items: { type: 'object' }, description: 'Array of stage objects with id, name, type, instruction' },
+          connections: { type: 'array', items: { type: 'object' }, description: 'Array of connection edges: { id, from, to, type, condition? }' },
           channelFlows: { type: 'object', description: 'Per-channel flow overrides: { channelName: { connections: [...] } }' },
           enabledTools: { type: 'array', items: { type: 'string' }, description: 'Tool IDs to enable' },
           channels: { type: 'array', items: { type: 'string' }, description: 'Channels: web, whatsapp, phone, etc.' },
