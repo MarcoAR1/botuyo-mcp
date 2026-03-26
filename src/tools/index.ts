@@ -26,6 +26,11 @@ import { LIST_KNOWLEDGE_DOCS_TOOL, listKnowledgeDocsHandler } from './list_knowl
 import { DELETE_KNOWLEDGE_DOC_TOOL, deleteKnowledgeDocHandler } from './delete_knowledge_doc.js'
 import { ASSOCIATE_KNOWLEDGE_TOOL, associateKnowledgeHandler } from './associate_knowledge.js'
 
+import { CONFIGURE_AGENT_TOOL, configureAgentToolHandler } from './configure_agent_tool.js'
+import { LIST_TOOL_CONFIGS_TOOL, listToolConfigsHandler } from './list_tool_configs.js'
+import { REMOVE_TOOL_CONFIG_TOOL, removeToolConfigHandler } from './remove_tool_config.js'
+import { GET_TOOL_CONFIG_TOOL, getToolConfigHandler } from './get_tool_config.js'
+import { LIST_BASE_TOOLS_TOOL, listBaseToolsHandler } from './list_base_tools.js'
 export const ALL_TOOLS: Tool[] = [
   LIST_AGENTS_TOOL,
   GET_AGENT_TOOL,
@@ -46,6 +51,11 @@ export const ALL_TOOLS: Tool[] = [
   LIST_KNOWLEDGE_DOCS_TOOL,
   DELETE_KNOWLEDGE_DOC_TOOL,
   ASSOCIATE_KNOWLEDGE_TOOL,
+  CONFIGURE_AGENT_TOOL,
+  LIST_TOOL_CONFIGS_TOOL,
+  REMOVE_TOOL_CONFIG_TOOL,
+  GET_TOOL_CONFIG_TOOL,
+  LIST_BASE_TOOLS_TOOL,
 ]
 
 export type ToolHandler = (client: BotuyoApiClient, args: Record<string, unknown>) => Promise<unknown>
@@ -70,4 +80,9 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
   list_knowledge_documents: listKnowledgeDocsHandler,
   delete_knowledge_document: deleteKnowledgeDocHandler,
   associate_knowledge_to_agent: associateKnowledgeHandler,
+  configure_agent_tool: configureAgentToolHandler,
+  list_tool_configs: listToolConfigsHandler,
+  remove_tool_config: removeToolConfigHandler,
+  get_tool_config: getToolConfigHandler,
+  list_base_tools: listBaseToolsHandler,
 }
