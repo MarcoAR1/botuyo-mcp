@@ -1,7 +1,7 @@
 import { vi, describe, it, expect } from 'vitest'
 import { switchTenantHandler } from '../switch_tenant.js'
 
-vi.mock('../commands/credentials.js', () => ({
+vi.mock('../../commands/credentials.js', () => ({
   readCredentials: vi.fn(() => ({ token: 'mock-token', tenantId: 't1' })),
   saveCredentials: vi.fn()
 }))

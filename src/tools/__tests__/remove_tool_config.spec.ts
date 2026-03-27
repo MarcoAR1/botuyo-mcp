@@ -10,16 +10,10 @@ class MockDeleteClient {
 }
 
 describe('removeToolConfigHandler', () => {
-  it('should perform DELETE request with removeFromEnabled=true', async () => {
+  it('should DELETE to /tool-config/:toolName', async () => {
     const client = new MockDeleteClient() as any
-    await removeToolConfigHandler(client, { agentId: 'a1', toolName: 't1', removeFromEnabled: true })
-    expect(client.paths[0]).toBe('/api/v1/mcp/agents/a1/tools/t1/config?removeFromEnabled=true')
-  })
-
-  it('should perform DELETE request without query param if removeFromEnabled is omitted', async () => {
-    const client = new MockDeleteClient() as any
-    await removeToolConfigHandler(client, { agentId: 'a1', toolName: 't1' })
-    expect(client.paths[0]).toBe('/api/v1/mcp/agents/a1/tools/t1/config')
+    await removeToolConfigHandler(client, { agentId: 'a1', toolName: 'webhook_pedidos' })
+    expect(client.paths[0]).toBe('/api/v1/mcp/agents/a1/tool-config/webhook_pedidos')
   })
 
   it('should throw if missing arguments', async () => {
