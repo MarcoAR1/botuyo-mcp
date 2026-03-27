@@ -14,7 +14,7 @@
  */
 
 import * as readline from 'readline'
-import { readCredentials, saveCredentials, BotuyoCredentials } from './credentials.js'
+import { readCredentials, saveCredentials, clearCredentials, verifyTokenWithServer, BotuyoCredentials } from './credentials.js'
 
 const API_URL = process.env.BOTUYO_API_URL || 'https://api.botuyo.com'
 
@@ -23,14 +23,36 @@ export async function runLogin(args: string[]): Promise<void> {
 
   const existing = await readCredentials()
   if (existing && !args.includes('--force')) {
-    const expired = existing.expiresAt && new Date(existing.expiresAt) < new Date()
-    if (!expired) {
-      console.log(`✅ Ya estás autenticado como: ${existing.email}`)
-      console.log(`   Tenant: ${existing.tenantName} (${existing.role})`)
-      console.log('\n   Usá --force para re-autenticarte.\n')
+    const localExpired = existing.expiresAt && new Date(existing.expiresAt) < new Date()
+    if (localExpired) {
+      await clearCredentials()
+      console.log('⚠️  Tu sesión expiró. Vamos a re-autenticarte.\n')
+    } else {
+      // Verify token is still valid on server
+      const valid = await verifyTokenWithServer(existing.token, API_URL)
+      if (valid) {
+        console.log(`✅ Ya estás autenticado como: ${existing.email}`)
+        console.log(`   Tenant: ${existing.tenantName} (${existing.role})`)
+        console.log('\n   Usá --force para re-autenticarte.')
+        console.log('   O usá `npx @botuyo/mcp auth` para login por browser (OAuth).\n')
+        return
+      }
+      console.log('⚠️  Tu sesión ya no es válida en el servidor. Vamos a re-autenticarte.\n')
+    }
+  }
+
+  // Offer login method choice
+  if (process.stdin.isTTY) {
+    console.log('  1. 🔑 Email y password (en esta terminal)')
+    console.log('  2. 🌐 Browser OAuth (abre el navegador)\n')
+    const method = await prompt('¿Cómo querés autenticarte? (1 o 2, Enter para 1): ')
+    if (method.trim() === '2') {
+      console.log('')
+      const { runAuth } = await import('./auth.js')
+      await runAuth(args)
       return
     }
-    console.log('⚠️  Tu sesión expiró. Vamos a re-autenticarte.\n')
+    console.log('')
   }
 
   // Prompt for email and password
@@ -84,13 +106,21 @@ export async function runLogin(args: string[]): Promise<void> {
       tenantIds.map(async (tid: string, i: number) => {
         const role = roles.find((r: any) => r.tenantId === tid)?.role || 'member'
         const isActive = tid === tenantId
-        return { id: tid, role, isActive, index: i + 1 }
+        let name = tid
+        try {
+          const tRes = await fetch(`${API_URL}/api/v1/tenants/${tid}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          const tData = (await tRes.json()) as any
+          name = tData.data?.name || tData.data?.tenant?.name || tid
+        } catch { /* keep tid as fallback */ }
+        return { id: tid, name, role, isActive, index: i + 1 }
       })
     )
 
     for (const t of tenantInfos) {
       const marker = t.isActive ? ' ← actual' : ''
-      console.log(`   ${t.index}. ${t.id} (${t.role})${marker}`)
+      console.log(`   ${t.index}. ${t.name} (${t.role})${marker}`)
     }
 
     const choice = await prompt('\n¿Qué tenant querés usar? (número, Enter para el actual): ')
@@ -100,7 +130,7 @@ export async function runLogin(args: string[]): Promise<void> {
       const selectedTenant = tenantInfos[choiceNum - 1]
       if (selectedTenant.id !== tenantId) {
         // Switch tenant
-        console.log(`\n⏳ Cambiando a tenant ${selectedTenant.id}...`)
+        console.log(`\n⏳ Cambiando a tenant ${selectedTenant.name}...`)
         const switchRes = await fetch(`${API_URL}/api/auth/switch-tenant`, {
           method: 'POST',
           headers: {
@@ -198,7 +228,9 @@ function promptPassword(question: string): Promise<string> {
             stdin.pause()
             stdin.removeListener('data', onData)
             rl.close()
-            process.stdout.write('\n')
+            process.stdout.clearLine(0)
+            process.stdout.cursorTo(0)
+            process.stdout.write(question + '\n')
             resolve(password)
             break
           case '\u0003': // Ctrl+C
@@ -207,14 +239,18 @@ function promptPassword(question: string): Promise<string> {
           case '\u007F': // Backspace
             if (password.length > 0) {
               password = password.slice(0, -1)
-              process.stdout.clearLine(0)
-              process.stdout.cursorTo(0)
-              process.stdout.write(question + '*'.repeat(password.length))
             }
+            // Always clear and redraw to prevent any char leaking
+            process.stdout.clearLine(0)
+            process.stdout.cursorTo(0)
+            process.stdout.write(question + '*'.repeat(password.length))
             break
           default:
             password += c
-            process.stdout.write('*')
+            // Clear entire line and redraw to prevent any char leaking
+            process.stdout.clearLine(0)
+            process.stdout.cursorTo(0)
+            process.stdout.write(question + '*'.repeat(password.length))
             break
         }
       }
