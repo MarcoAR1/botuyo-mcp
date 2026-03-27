@@ -30,7 +30,8 @@ import { CONFIGURE_AGENT_TOOL, configureAgentToolHandler } from './configure_age
 import { LIST_TOOL_CONFIGS_TOOL, listToolConfigsHandler } from './list_tool_configs.js'
 import { REMOVE_TOOL_CONFIG_TOOL, removeToolConfigHandler } from './remove_tool_config.js'
 import { GET_TOOL_CONFIG_TOOL, getToolConfigHandler } from './get_tool_config.js'
-import { LIST_BASE_TOOLS_TOOL, listBaseToolsHandler } from './list_base_tools.js'
+import { GET_TOOLS_CATALOG_TOOL, getToolsCatalogHandler } from './list_base_tools.js'
+import { LIST_AVATARS_TOOL, listAvatarsHandler, SELECT_AVATAR_TOOL, selectAvatarHandler } from './configure_avatar.js'
 export const ALL_TOOLS: Tool[] = [
   LIST_AGENTS_TOOL,
   GET_AGENT_TOOL,
@@ -55,7 +56,9 @@ export const ALL_TOOLS: Tool[] = [
   LIST_TOOL_CONFIGS_TOOL,
   REMOVE_TOOL_CONFIG_TOOL,
   GET_TOOL_CONFIG_TOOL,
-  LIST_BASE_TOOLS_TOOL,
+  GET_TOOLS_CATALOG_TOOL,
+  LIST_AVATARS_TOOL,
+  SELECT_AVATAR_TOOL,
 ]
 
 export type ToolHandler = (client: BotuyoApiClient, args: Record<string, unknown>) => Promise<unknown>
@@ -84,5 +87,7 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
   list_tool_configs: listToolConfigsHandler,
   remove_tool_config: removeToolConfigHandler,
   get_tool_config: getToolConfigHandler,
-  list_base_tools: listBaseToolsHandler,
+  get_tools_catalog: getToolsCatalogHandler,
+  list_avatars: listAvatarsHandler,
+  select_avatar: selectAvatarHandler,
 }
