@@ -55,8 +55,9 @@ export async function resolveToken(): Promise<string | null> {
   const creds = await readCredentials()
   if (!creds?.token) return null
 
-  // Check if expired
+  // Check if expired — auto-clear stale credentials
   if (creds.expiresAt && new Date(creds.expiresAt) < new Date()) {
+    await clearCredentials()
     return null // expired
   }
 
@@ -70,4 +71,31 @@ export async function isTokenExpired(): Promise<boolean> {
   const creds = await readCredentials()
   if (!creds?.expiresAt) return true
   return new Date(creds.expiresAt) < new Date()
+}
+
+/**
+ * Verify a token with the server (GET /api/auth/me).
+ * Returns true if valid, false if expired/invalid.
+ * On failure, auto-clears stored credentials.
+ */
+export async function verifyTokenWithServer(token: string, apiUrl?: string): Promise<boolean> {
+  const url = apiUrl || process.env.BOTUYO_API_URL || 'https://api.botuyo.com'
+  try {
+    const res = await fetch(`${url}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (!res.ok) {
+      await clearCredentials()
+      return false
+    }
+    const body = await res.json() as any
+    if (!body.success) {
+      await clearCredentials()
+      return false
+    }
+    return true
+  } catch {
+    // Network error — don't clear credentials, just can't verify
+    return true
+  }
 }

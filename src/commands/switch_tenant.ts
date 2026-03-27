@@ -20,7 +20,7 @@ export async function runSwitchTenant(): Promise<void> {
   const creds = await readCredentials()
 
   if (!token || !creds) {
-    console.error('❌ No estás autenticado. Ejecutá: npx @botuyo/mcp login')
+    console.error('❌ No estás autenticado. Ejecutá: npx @botuyo/mcp auth (browser) o npx @botuyo/mcp login (terminal)')
     process.exit(1)
   }
 
@@ -32,7 +32,7 @@ export async function runSwitchTenant(): Promise<void> {
 
   if (!meData.success) {
     console.error(`❌ Sesión inválida: ${meData.error || 'Token expirado'}`)
-    console.error('   Ejecutá: npx @botuyo/mcp login')
+    console.error('   Ejecutá: npx @botuyo/mcp auth (browser) o npx @botuyo/mcp login (terminal)')
     process.exit(1)
   }
 
@@ -53,12 +53,28 @@ export async function runSwitchTenant(): Promise<void> {
 
   console.log(`Tenés ${tenantIds.length} tenants disponibles:\n`)
 
-  for (let i = 0; i < tenantIds.length; i++) {
-    const tid = tenantIds[i]
-    const role = roles.find((r: any) => r.tenantId === tid)?.role || 'member'
-    const isActive = tid === creds.tenantId
-    const marker = isActive ? ' ← actual' : ''
-    console.log(`   ${i + 1}. ${tid} (${role})${marker}`)
+  // Fetch tenant names for display
+  const tenantInfos = await Promise.all(
+    tenantIds.map(async (tid: string, i: number) => {
+      const role = roles.find((r: any) => r.tenantId === tid)?.role || 'member'
+      const isActive = tid === creds.tenantId
+      let name = isActive ? (creds.tenantName || tid) : tid
+      if (name === tid) {
+        try {
+          const tRes = await fetch(`${API_URL}/api/v1/tenants/${tid}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          const tData = (await tRes.json()) as any
+          name = tData.data?.name || tData.data?.tenant?.name || tid
+        } catch { /* keep tid as fallback */ }
+      }
+      return { id: tid, name, role, isActive, index: i + 1 }
+    })
+  )
+
+  for (const t of tenantInfos) {
+    const marker = t.isActive ? ' ← actual' : ''
+    console.log(`   ${t.index}. ${t.name} (${t.role})${marker}`)
   }
 
   const choice = await prompt('\n¿A qué tenant querés cambiar? (número): ')
@@ -69,13 +85,14 @@ export async function runSwitchTenant(): Promise<void> {
     return
   }
 
-  const selectedTenantId = tenantIds[choiceNum - 1]
+  const selectedTenant = tenantInfos[choiceNum - 1]
+  const selectedTenantId = selectedTenant.id
   if (selectedTenantId === creds.tenantId) {
     console.log('\nYa estás en ese tenant. No hubo cambios.\n')
     return
   }
 
-  console.log(`\n⏳ Cambiando a tenant ${selectedTenantId}...`)
+  console.log(`\n⏳ Cambiando a tenant ${selectedTenant.name}...`)
 
   const switchRes = await fetch(`${API_URL}/api/auth/switch-tenant`, {
     method: 'POST',

@@ -18,7 +18,7 @@ export async function runTenants(): Promise<void> {
   const creds = await readCredentials()
 
   if (!token || !creds) {
-    console.error('❌ No estás autenticado. Ejecutá: npx @botuyo/mcp login')
+    console.error('❌ No estás autenticado. Ejecutá: npx @botuyo/mcp auth (browser) o npx @botuyo/mcp login (terminal)')
     process.exit(1)
   }
 
@@ -29,7 +29,7 @@ export async function runTenants(): Promise<void> {
 
   if (!meData.success) {
     console.error(`❌ Sesión inválida: ${meData.error || 'Token expirado'}`)
-    console.error('   Ejecutá: npx @botuyo/mcp login')
+    console.error('   Ejecutá: npx @botuyo/mcp auth (browser) o npx @botuyo/mcp login (terminal)')
     process.exit(1)
   }
 
@@ -44,15 +44,25 @@ export async function runTenants(): Promise<void> {
 
   console.log(`Email: ${creds.email}`)
   console.log(`Tenants: ${tenantIds.length}\n`)
-  console.log('  #   Tenant ID                           Rol        Estado')
+  console.log('  #   Nombre                              Rol        Estado')
   console.log('  ─   ─────────────────────────────────   ─────────  ──────')
 
   for (let i = 0; i < tenantIds.length; i++) {
     const tid = tenantIds[i]
     const role = roles.find((r: any) => r.tenantId === tid)?.role || 'member'
     const isActive = tid === creds.tenantId
+    let name = isActive ? (creds.tenantName || tid) : tid
+    if (name === tid) {
+      try {
+        const tRes = await fetch(`${API_URL}/api/v1/tenants/${tid}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const tData = (await tRes.json()) as any
+        name = tData.data?.name || tData.data?.tenant?.name || tid
+      } catch { /* keep tid as fallback */ }
+    }
     const status = isActive ? '✓ activo' : ''
-    console.log(`  ${i + 1}   ${tid.padEnd(37)} ${role.padEnd(10)} ${status}`)
+    console.log(`  ${i + 1}   ${name.padEnd(37)} ${role.padEnd(10)} ${status}`)
   }
 
   console.log(`\nPara cambiar de tenant: npx @botuyo/mcp switch-tenant\n`)

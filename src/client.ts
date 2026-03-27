@@ -2,7 +2,7 @@
  * BotuyoApiClient - Thin HTTP wrapper around the BotUyo REST API
  * All MCP tools go through this client.
  *
- * Uses a JWT token directly (obtained via `npx @botuyo/mcp login`).
+ * Uses a JWT token directly (obtained via `npx @botuyo/mcp auth` or `npx @botuyo/mcp login`).
  * Requires Node 18+ (native fetch).
  */
 
@@ -26,6 +26,11 @@ export class BotuyoApiClient {
     this.config = config
   }
 
+  /** Get the current JWT token */
+  getToken(): string {
+    return this.config.token
+  }
+
   /** Hot-swap the JWT token (used by switch_tenant) */
   setToken(token: string) {
     this.config = { ...this.config, token }
@@ -42,7 +47,7 @@ export class BotuyoApiClient {
 
     const body = await this.parseJson(res)
     if (!body.success) {
-      throw new Error(`Session expired or invalid: ${body.error || 'Unknown error'}. Run: npx @botuyo/mcp login`)
+      throw new Error(`Session expired or invalid: ${body.error || 'Unknown error'}. Run: npx @botuyo/mcp auth (browser) or npx @botuyo/mcp login (terminal)`)
     }
 
     const user = body.data.user
@@ -106,7 +111,7 @@ export class BotuyoApiClient {
 
     // Detect expired token
     if (res.status === 401) {
-      throw new Error('Sesión expirada. Ejecutá: npx @botuyo/mcp login')
+      throw new Error('Sesión expirada. Ejecutá: npx @botuyo/mcp auth (browser) o npx @botuyo/mcp login (terminal)')
     }
 
     return json

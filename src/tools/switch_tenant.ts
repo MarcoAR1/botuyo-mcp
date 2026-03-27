@@ -26,7 +26,7 @@ const API_URL = process.env.BOTUYO_API_URL || 'https://api.botuyo.com'
 export async function switchTenantHandler(client: BotuyoApiClient, args: Record<string, unknown>) {
   const creds = await readCredentials()
   if (!creds?.token) {
-    return { success: false, error: 'No credentials found. Run: npx @botuyo/mcp login' }
+    return { success: false, error: 'No credentials found. Run: npx @botuyo/mcp auth (browser) or npx @botuyo/mcp login (terminal)' }
   }
 
   // Get user info with tenants
