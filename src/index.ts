@@ -98,37 +98,38 @@ async function main() {
 }
 
 async function startMcpServer() {
-  // Resolve JWT token
+  // Resolve JWT token — server starts regardless of auth state
   const token = await resolveToken()
+  let authenticated = false
+  let client: BotuyoApiClient | null = null
 
   if (!token) {
     const expired = await isTokenExpired()
     if (expired) {
-      console.error('[botuyo-mcp] Error: Tu sesión expiró.')
+      console.error('[botuyo-mcp] ⚠ Tu sesión expiró. Ejecutá: npx @botuyo/mcp login')
     } else {
-      console.error('[botuyo-mcp] Error: No hay credenciales guardadas.')
+      console.error('[botuyo-mcp] ⚠ No hay credenciales. Ejecutá: npx @botuyo/mcp login')
     }
-    console.error('[botuyo-mcp] Ejecutá `npx @botuyo/mcp login` para autenticarte.')
-    process.exit(1)
+  } else {
+    const creds = await readCredentials()
+    client = new BotuyoApiClient({ token, apiUrl: API_URL })
+
+    try {
+      const auth = await client.verify()
+      const tenantName = creds?.tenantName || auth.tenantId
+      const role = creds?.role || auth.role
+      console.error(`[botuyo-mcp] ✓ Conectado a "${tenantName}" como ${role}`)
+      authenticated = true
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error(`[botuyo-mcp] ⚠ Auth failed: ${msg}`)
+      console.error('[botuyo-mcp] Las tools pedirán re-autenticación. Ejecutá: npx @botuyo/mcp login')
+    }
   }
 
-  const creds = await readCredentials()
-  const client = new BotuyoApiClient({ token, apiUrl: API_URL })
+  const AUTH_ERROR_MSG = 'No autenticado. El usuario debe ejecutar: npx @botuyo/mcp login'
 
-  // Verify credentials on startup
-  try {
-    const auth = await client.verify()
-    const tenantName = creds?.tenantName || auth.tenantId
-    const role = creds?.role || auth.role
-    console.error(`[botuyo-mcp] ✓ Conectado a "${tenantName}" como ${role}`)
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err)
-    console.error(`[botuyo-mcp] ✗ Auth failed: ${msg}`)
-    console.error('[botuyo-mcp] Ejecutá `npx @botuyo/mcp login` para re-autenticarte.')
-    process.exit(1)
-  }
-
-  // ── MCP Server ─────────────────────────────────────────────────────────
+  // ── MCP Server — starts ALWAYS, even without valid auth ────────────────
   const server = new Server(
     { name: 'botuyo-mcp', version: '0.3.0' },
     { capabilities: { tools: {} } }
@@ -142,6 +143,11 @@ async function startMcpServer() {
 
     if (!handler) {
       return { content: [{ type: 'text', text: `Unknown tool: ${name}` }], isError: true }
+    }
+
+    // Guard: if not authenticated, every tool returns a login prompt
+    if (!authenticated || !client) {
+      return { content: [{ type: 'text', text: AUTH_ERROR_MSG }], isError: true }
     }
 
     try {
