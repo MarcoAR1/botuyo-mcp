@@ -51,6 +51,7 @@ Requires role: owner, admin, or developer.`,
           connections: { type: 'array', items: { type: 'object' }, description: 'Array of connection edges: { id, from, to, type, condition? }' },
           channelFlows: { type: 'object', description: 'Per-channel flow overrides: { channelName: { connections: [...] } }' },
           enabledTools: { type: 'array', items: { type: 'string' }, description: 'Tool IDs to enable' },
+          toolConfigs: { type: 'object', description: 'Per-tool pre-configuration. Keys are tool names. Single-instance: { params, instruction }. Multi-instance: { baseTool, params, fields, instruction }. Use configure_agent_tool for managing individual configs.' },
           channels: { type: 'array', items: { type: 'string' }, description: 'Channels: web, whatsapp, phone, etc.' },
           widgetConfig: {
             type: 'object',
@@ -65,14 +66,19 @@ Requires role: owner, admin, or developer.`,
                 description: 'Dark mode overrides. Same keys as cssVariables. primary/primaryForeground are preserved from light mode — only override surface colors (background, card, muted, border, etc.).'
               },
               welcomeMessage: { type: 'string', description: 'Initial greeting shown when widget opens' },
-              placeholder: { type: 'string', description: 'Placeholder text in chat input' },
+              inputPlaceholder: { type: 'string', description: 'Placeholder text in chat input' },
               position: { type: 'string', enum: ['bottom-right', 'bottom-left'], description: 'Widget position' },
+              theme: { type: 'string', enum: ['light', 'dark', 'auto'], description: 'Widget color scheme. "auto" follows host page prefers-color-scheme' },
               headerText: { type: 'string', description: 'Text shown in the widget header bar' },
               starterPrompt: { type: 'string', description: 'Bubble text shown when widget is closed to invite interaction' },
               defaultLocale: { type: 'string', enum: ['es', 'en', 'pt', 'fr'], description: 'Widget UI language' },
+              avatarUrl: { type: 'string', description: '2D avatar image URL. Use upload_agent_media to upload and auto-assign' },
+              logoUrl: { type: 'string', description: 'Widget logo URL. Use upload_agent_media with mediaType "logo"' },
               avatarScale: { type: 'number', description: 'Avatar zoom factor (default 1, e.g. 1.2 = 20% larger)' },
               showPromptAvatar: { type: 'boolean', description: 'Show mini avatar next to starter prompt bubble' },
               avatar3dUrl: { type: 'string', description: 'URL to .glb/.vrm 3D model for voice call avatar' },
+              avatarAnimations: { type: 'object', description: 'Emotion → image URL mapping for animated avatar expressions' },
+              avatar2dAnimations: { type: 'object', description: 'Animation state → image URL for 2D avatar animations' },
               animations: {
                 type: 'object',
                 description: 'Animation config',
@@ -114,7 +120,8 @@ Requires role: owner, admin, or developer.`,
             }
           },
           channelPrompts: { type: 'object', description: 'Per-channel system prompt overrides: { channelName: "prompt text" }' },
-          knowledgeDocumentIds: { type: 'array', items: { type: 'string' }, description: 'Knowledge base document IDs for RAG' }
+          knowledgeDocumentIds: { type: 'array', items: { type: 'string' }, description: 'Knowledge base document IDs for RAG' },
+          allowedOrigins: { type: 'array', items: { type: 'string' }, description: 'CORS allowed origins for web widget embedding' }
         },
         required: ['name', 'identity']
       }

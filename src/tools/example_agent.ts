@@ -11,7 +11,8 @@ Useful for:
 - New users learning the agent config structure
 - Checking available fields before using import_agent_json
 - Understanding how stages, connections, channelFlows, and tools work together
-- Learning the widget theming system (cssVariables, darkCssVariables, animations, effects)`,
+- Learning the widget theming system (cssVariables, darkCssVariables, animations, effects)
+- Understanding per-tool configuration (toolConfigs) with single and multi-instance patterns`,
   inputSchema: {
     type: 'object',
     properties: {},
@@ -160,31 +161,113 @@ export async function exampleAgentHandler() {
       'create_pre_reservation',
       'search_knowledge_base',
       'identify_user_context',
-      'update_user_profile'
+      'update_user_profile',
+      'webhook_pedidos'
     ],
     _enabledTools_doc: 'Array of tool IDs the agent can use. Per-stage tools[] must be a subset. ' +
       'Use list_available_tools to see all options with descriptions. ' +
-      'Tools auto-sync: any tool referenced in a stage.tools[] is automatically added to enabledTools on save.',
+      'Tools auto-sync: any tool referenced in a stage.tools[] is automatically added to enabledTools on save. ' +
+      'Multi-instance tool names (from toolConfigs) must also be listed here.',
 
     channels: ['web', 'whatsapp', 'phone'],
     _channels_doc: 'Array of channels the agent is published on. Valid: "web", "whatsapp", "telegram", "discord", "instagram", "phone". ' +
       'Runtime filters tools by channel compatibility — text-only tools (e.g. create_pre_reservation) won\'t load on phone. ' +
       'You can have phone + text-only tools as long as your channelFlows.phone never reaches stages with those tools.',
 
+    // ─── TOOL CONFIGURATIONS ────────────────────────────────────────
+    toolConfigs: {
+      // Single-instance: configure an existing tool with fixed params
+      send_email: {
+        params: {
+          fromEmail: 'soporte@miempresa.com',
+          fromName: 'Soporte Mi Empresa'
+        },
+        instruction: 'Usá esta tool para enviar emails de confirmación al usuario.'
+      },
+      // Multi-instance: create a virtual tool based on a real one
+      webhook_pedidos: {
+        baseTool: 'call_webhook',
+        params: {
+          url: 'https://api.miempresa.com/webhooks/pedidos',
+          method: 'POST',
+          headers: { 'X-API-Key': 'sk-xxx' }
+        },
+        fields: [
+          { name: 'producto', type: 'string', label: 'Nombre del producto', required: true },
+          { name: 'cantidad', type: 'number', label: 'Cantidad', required: true },
+          { name: 'prioridad', type: 'enum', label: 'Prioridad', required: false, enumValues: ['baja', 'media', 'alta'] }
+        ],
+        instruction: 'Enviá un pedido al sistema de gestión cuando el usuario confirme la compra.'
+      }
+    },
+    _toolConfigs_doc: {
+      _overview: 'Optional. Per-tool pre-configuration stored on the agent. Two modes:',
+      singleInstance: {
+        description: 'Configure an existing core tool (e.g. send_email) with fixed params. ' +
+          'The tool keeps its original name and declaration, but receives pre-set values at runtime.',
+        example: 'send_email → { params: { fromEmail: "..." }, instruction: "..." }'
+      },
+      multiInstance: {
+        description: 'Create a virtual tool with a custom name, based on a real tool (baseTool). ' +
+          'The virtual tool gets its own declaration generated from the fields[] schema. ' +
+          'The baseTool handles execution, but params are injected automatically. ' +
+          'The custom name MUST also be added to enabledTools[].',
+        example: 'webhook_pedidos → { baseTool: "call_webhook", params: { url: "..." }, fields: [...] }'
+      },
+      _fields: {
+        baseTool: 'String. Only for multi-instance. The real tool that executes (e.g. "call_webhook", "sync_to_google_sheets").',
+        params: 'Object. Key-value pairs injected at execute() time. Invisible to the LLM — it never sees these.',
+        fields: 'Array of IToolField. Defines what the LLM sees as the tool\'s parameters (overrides default declaration).',
+        instruction: 'String. Short guidance for the LLM about when/how to use this tool.'
+      },
+      _toolFieldSchema: {
+        name: 'Required. String. Parameter name the LLM will use.',
+        type: 'Required. "string" | "number" | "boolean" | "date" | "enum".',
+        label: 'Required. String. Human-readable label.',
+        required: 'Required. Boolean. Whether the LLM must provide this parameter.',
+        description: 'Optional. String. Extra context for the LLM about this parameter.',
+        enumValues: 'Optional. String[]. Valid values when type is "enum".',
+        validation: 'Optional. { min?, max?, pattern?, maxLength? }. Validation rules.'
+      },
+      _managementTools: [
+        'configure_agent_tool — Create/update a tool config (auto-adds to enabledTools if missing)',
+        'list_tool_configs — List all configured tools for an agent',
+        'get_tool_config — View a specific tool config',
+        'remove_tool_config — Delete a tool config (auto-removes multi-instance from enabledTools)',
+        'get_tools_catalog — Browse all available tools with configSchema and allowMultiInstance flags'
+      ]
+    },
+
     // ─── WIDGET CONFIGURATION ──────────────────────────────────────
     widgetConfig: {
       // -- Appearance --
       welcomeMessage: '¡Hola! 👋 Soy tu asistente virtual. ¿En qué puedo ayudarte?',
-      placeholder: 'Escribí tu mensaje...',
+      inputPlaceholder: 'Escribí tu mensaje...',
       position: 'bottom-right',
+      theme: 'auto',
       headerText: 'MI AGENTE 🤖',
       starterPrompt: '¿Necesitas ayuda?',
       defaultLocale: 'es',
+
+      // -- Agent Avatar & Logo --
+      avatarUrl: 'https://cdn.botuyo.com/agents/avatar-example.webp',
+      logoUrl: 'https://cdn.botuyo.com/agents/logo-example.webp',
       avatarScale: 1.2,
       showPromptAvatar: true,
 
       // -- 3D Avatar for Voice Calls --
       avatar3dUrl: 'https://example.com/model.glb',
+
+      // -- Avatar Animations (emotion → image URL for animated expressions) --
+      avatarAnimations: {
+        happy: 'https://cdn.botuyo.com/animations/happy.webp',
+        thinking: 'https://cdn.botuyo.com/animations/thinking.webp',
+        greeting: 'https://cdn.botuyo.com/animations/greeting.webp'
+      },
+      avatar2dAnimations: {
+        idle: 'https://cdn.botuyo.com/animations/2d-idle.webp',
+        talking: 'https://cdn.botuyo.com/animations/2d-talking.webp'
+      },
 
       // -- Light Mode CSS Variables --
       cssVariables: {
@@ -259,10 +342,16 @@ export async function exampleAgentHandler() {
       }
     },
     _widgetConfig_doc: {
+      avatarUrl: 'Optional. String. 2D avatar image URL. Use upload_agent_media tool to upload and auto-assign. Supported: webp, png, jpg, svg (max 2MB).',
+      logoUrl: 'Optional. String. Widget logo URL. Use upload_agent_media tool with mediaType "logo" to upload and auto-assign.',
+      inputPlaceholder: 'Optional. String. Placeholder text in the chat input field.',
+      theme: 'Optional. "light" | "dark" | "auto". Controls widget color scheme. "auto" follows the host page prefers-color-scheme.',
+      avatarAnimations: 'Optional. Object. Keys are emotion names (happy, thinking, greeting, etc.), values are image URLs. Used for animated avatar expressions.',
+      avatar2dAnimations: 'Optional. Object. Keys are animation states (idle, talking, etc.), values are image URLs. For 2D avatar animations.',
       cssVariables: 'HSL values WITHOUT the hsl() wrapper. "primary" and "primaryForeground" are your brand colors — they are preserved in both light and dark mode.',
       darkCssVariables: 'Optional. Overrides ONLY the surface colors (background, card, muted, border, etc.) for dark mode. ' +
         'primary/primaryForeground from cssVariables are ALWAYS preserved. Dark mode activates automatically when the host page uses prefers-color-scheme: dark.',
-      avatar3dUrl: 'Optional. URL to a .glb/.vrm 3D model. Displayed as the voice call avatar orb instead of the 2D image.',
+      avatar3dUrl: 'Optional. URL to a .glb/.vrm 3D model. Displayed as the voice call avatar orb instead of the 2D image. Use select_avatar tool to pick from catalog or set a custom URL.',
       avatarScale: 'Optional. Number (default 1). Controls avatar zoom. 1.2 = 20% larger.',
       showPromptAvatar: 'Optional. Boolean. Shows a mini avatar next to the starter prompt bubble.',
       defaultLocale: 'Optional. "es" | "en" | "pt" | "fr". Sets the widget UI language.',
@@ -280,7 +369,12 @@ export async function exampleAgentHandler() {
         particles: 'Confetti/particles on certain actions (e.g. booking confirmed). Off by default.',
         soundEffects: 'UI sounds on send/receive. Off by default.',
         hapticFeedback: 'Vibration on mobile when interacting. On by default.'
-      }
+      },
+      _mediaTools: [
+        'upload_agent_media — Upload a local image file to CDN and auto-assign as avatar or logo',
+        'list_avatars — Browse the 3D avatar catalog',
+        'select_avatar — Assign a 3D avatar from catalog or custom URL'
+      ]
     },
 
     // ─── VOICE CONFIGURATION ───────────────────────────────────────
@@ -315,7 +409,14 @@ export async function exampleAgentHandler() {
     // ─── KNOWLEDGE BASE ────────────────────────────────────────────
     knowledgeDocumentIds: ['doc_abc123', 'doc_def456'],
     _knowledgeDocumentIds_doc: 'Optional. Array of MongoDB IDs of knowledge base documents for RAG. ' +
-      'The agent will search these documents for context when the search_knowledge_base tool is invoked.',
+      'The agent will search these documents for context when the search_knowledge_base tool is invoked. ' +
+      'Use list_knowledge_documents to see available docs, and associate_knowledge_to_agent to link them.',
+
+    // ─── CORS / ALLOWED ORIGINS ────────────────────────────────────
+    allowedOrigins: ['https://miempresa.com', 'https://app.miempresa.com'],
+    _allowedOrigins_doc: 'Optional. Array of allowed CORS origins for the web widget. ' +
+      'If set, only requests from these origins can interact with the agent via the widget embed. ' +
+      'If empty or omitted, all origins are allowed (not recommended for production).',
 
     // ─── READ-ONLY FIELDS (visible in export, ignored on import) ──
     _readOnlyFields: {
