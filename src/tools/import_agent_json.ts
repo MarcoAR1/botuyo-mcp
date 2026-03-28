@@ -5,7 +5,15 @@ import { resolve } from 'path'
 
 export const IMPORT_AGENT_JSON_TOOL: Tool = {
   name: 'import_agent_json',
-  description: `Import/replace an agent's full configuration from a local JSON file or from a JSON object.
+  description: `Import/replace an agent's FULL configuration from a local JSON file or from a JSON object.
+
+**This is a FULL REPLACE operation** — the entire agentConfig is overwritten with the provided config.
+For partial updates (changing just one field), use update_agent instead.
+
+**Null handling:**
+- Fields set to null are stripped before saving (field is removed from the stored config)
+- Omitted fields are NOT preserved — this is a full replace, not a merge
+- Internal fields (model, temperature, summaryThreshold, voice.liveModel) are preserved automatically
 
 **Preferred workflow:**
 1. Use export_agent_json to save the agent config to a local file (auto-saved to ./agents/)
@@ -17,10 +25,6 @@ You can provide the config either via:
 - agentConfig: inline JSON object (fallback if no file)
 
 If both are provided, filePath takes priority.
-
-The file can contain the metadata fields from export (_exportedAt, _agentId, _apiKey) — they are stripped automatically.
-The agentConfig must include at least 'name' and 'identity'.
-Internal fields (model, temperature, summaryThreshold, voice.liveModel) are preserved from existing config.
 
 Requires role: owner, admin, or developer.`,
   inputSchema: {
