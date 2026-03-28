@@ -130,6 +130,24 @@ Requires role: owner, admin, or developer.`,
   }
 }
 
+/**
+ * Recursively strip null/undefined values from an object.
+ * Prevents backend validation errors when imported JSON contains explicit nulls.
+ */
+function stripNulls(obj: unknown): unknown {
+  if (obj === null || obj === undefined) return undefined
+  if (Array.isArray(obj)) return obj.map(stripNulls).filter(v => v !== undefined)
+  if (typeof obj === 'object') {
+    const cleaned: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      const stripped = stripNulls(value)
+      if (stripped !== undefined) cleaned[key] = stripped
+    }
+    return cleaned
+  }
+  return obj
+}
+
 export async function importAgentJsonHandler(client: BotuyoApiClient, args: Record<string, unknown>) {
   let agentId = args.agentId as string | undefined
   let agentConfig = args.agentConfig as Record<string, unknown> | undefined
@@ -183,7 +201,10 @@ export async function importAgentJsonHandler(client: BotuyoApiClient, args: Reco
     }
   }
 
-  const result = await client.put(`/api/v1/mcp/agents/${agentId}/import`, { agentConfig })
+  // Strip null/undefined values to prevent backend validation errors (e.g. widgetConfig with null fields)
+  const cleanedConfig = stripNulls(agentConfig) as Record<string, unknown>
+
+  const result = await client.put(`/api/v1/mcp/agents/${agentId}/import`, { agentConfig: cleanedConfig })
 
   return {
     ...(result as any),

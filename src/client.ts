@@ -119,10 +119,14 @@ export class BotuyoApiClient {
 
   /** Upload a file via multipart POST to the media API */
   async uploadMedia(fileBuffer: Buffer, fileName: string, category: string): Promise<string> {
+    // Auto-inject tenantId from JWT so callers don't need to provide it explicitly
+    const auth = await this.verify()
+
     const blob = new Blob([new Uint8Array(fileBuffer)])
     const formData = new FormData()
     formData.append('file', blob, fileName)
     formData.append('category', category)
+    formData.append('tenantId', auth.tenantId)
 
     const res = await fetch(`${this.config.apiUrl}/api/media/upload`, {
       method: 'POST',
