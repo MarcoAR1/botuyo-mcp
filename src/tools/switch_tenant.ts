@@ -6,15 +6,15 @@ export const SWITCH_TENANT_TOOL: Tool = {
   name: 'switch_tenant',
   description:
     'Switch the active tenant for this MCP session. ' +
-    'If no tenantId is provided, lists all available tenants for the user. ' +
-    'If a tenantId is provided, switches to that tenant. ' +
+    'If no tenantId is provided, lists all available tenants (including sub-tenants within organizations). ' +
+    'If a tenantId is provided, switches to that tenant or sub-tenant. ' +
     'The switch takes effect immediately for subsequent tool calls.',
   inputSchema: {
     type: 'object',
     properties: {
       tenantId: {
         type: 'string',
-        description: 'The tenant ID to switch to. Omit to list available tenants.'
+        description: 'The tenant or sub-tenant ID to switch to. Omit to list available tenants.'
       }
     },
     required: []
@@ -69,7 +69,19 @@ export async function switchTenantHandler(client: BotuyoApiClient, args: Record<
         } catch { /* keep tid */ }
       }
 
-      return { tenantId: tid, name, role, isActive }
+      // Try to detect if this is a sub-tenant (has orgId)
+      let orgId: string | undefined
+      let isOrgRoot = false
+      let subTenantType: string | undefined
+      try {
+        const tRes2 = await client.get<any>(`/api/tenant/${tid}`)
+        const td = tRes2?.data || tRes2
+        orgId = td?.orgId
+        isOrgRoot = td?.isOrgRoot === true
+        subTenantType = td?.subTenantType
+      } catch { /* ignore */ }
+
+      return { tenantId: tid, name, role, isActive, orgId, isOrgRoot, subTenantType }
     }))
 
     return {
@@ -77,7 +89,7 @@ export async function switchTenantHandler(client: BotuyoApiClient, args: Record<
       activeTenantId: creds.tenantId,
       activeTenantName: creds.tenantName,
       tenants,
-      hint: 'Call switch_tenant with a tenantId to switch.'
+      hint: 'Call switch_tenant with a tenantId to switch. Sub-tenants show their orgId and type.'
     }
   }
 
