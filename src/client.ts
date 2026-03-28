@@ -117,6 +117,30 @@ export class BotuyoApiClient {
     return json
   }
 
+  /** Upload a file via multipart POST to the media API */
+  async uploadMedia(fileBuffer: Buffer, fileName: string, category: string): Promise<string> {
+    const blob = new Blob([new Uint8Array(fileBuffer)])
+    const formData = new FormData()
+    formData.append('file', blob, fileName)
+    formData.append('category', category)
+
+    const res = await fetch(`${this.config.apiUrl}/api/media/upload`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.config.token}`
+        // Note: no Content-Type header — fetch sets multipart boundary automatically
+      },
+      body: formData
+    })
+
+    const json = await this.parseJson(res)
+    if (!json.success && !json.url) {
+      throw new Error(`Upload failed: ${json.error || 'Unknown error'}`)
+    }
+
+    return json.url || json.data?.url
+  }
+
   private async parseJson(res: Response): Promise<any> {
     const text = await res.text()
     try {

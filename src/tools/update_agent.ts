@@ -24,6 +24,11 @@ Requires role: owner, admin, or developer.`,
           objective: { type: 'string', description: 'Primary objective of the agent' },
           customInstructions: { type: 'string', description: 'Custom instructions that override default behavior. Supports markdown.' }
         }
+      },
+      channels: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Channels where this agent is active. Valid values: "web", "whatsapp", "telegram", "instagram", "discord", "phone"'
       }
     },
     required: ['agentId']
