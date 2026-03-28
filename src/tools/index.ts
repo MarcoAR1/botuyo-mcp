@@ -33,6 +33,8 @@ import { GET_TOOL_CONFIG_TOOL, getToolConfigHandler } from './get_tool_config.js
 import { GET_TOOLS_CATALOG_TOOL, getToolsCatalogHandler } from './list_base_tools.js'
 import { LIST_AVATARS_TOOL, listAvatarsHandler, SELECT_AVATAR_TOOL, selectAvatarHandler } from './configure_avatar.js'
 import { UPLOAD_AGENT_MEDIA_TOOL, uploadAgentMediaHandler } from './upload_agent_media.js'
+import { LIST_AGENT_VERSIONS_TOOL, listAgentVersionsHandler } from './list_agent_versions.js'
+import { RESTORE_AGENT_VERSION_TOOL, restoreAgentVersionHandler } from './restore_agent_version.js'
 export const ALL_TOOLS: Tool[] = [
   LIST_AGENTS_TOOL,
   GET_AGENT_TOOL,
@@ -61,6 +63,8 @@ export const ALL_TOOLS: Tool[] = [
   LIST_AVATARS_TOOL,
   SELECT_AVATAR_TOOL,
   UPLOAD_AGENT_MEDIA_TOOL,
+  LIST_AGENT_VERSIONS_TOOL,
+  RESTORE_AGENT_VERSION_TOOL,
 ]
 
 export type ToolHandler = (client: BotuyoApiClient, args: Record<string, unknown>) => Promise<unknown>
@@ -93,4 +97,6 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
   list_avatars: listAvatarsHandler,
   select_avatar: selectAvatarHandler,
   upload_agent_media: uploadAgentMediaHandler,
+  list_agent_versions: listAgentVersionsHandler,
+  restore_agent_version: restoreAgentVersionHandler,
 }
