@@ -23,6 +23,21 @@ export const SWITCH_TENANT_TOOL: Tool = {
 
 const API_URL = process.env.BOTUYO_API_URL || 'https://api.botuyo.com'
 
+/**
+ * Resolve tenant name from API response.
+ * Handles multiple response shapes: { name }, { data: { name } }, { data: { tenant: { name } } }
+ */
+function extractTenantName(responseData: any, fallback: string): string {
+  if (!responseData) return fallback
+  // Direct: { name: "..." }
+  if (responseData.name && responseData.name !== responseData.tenantId) return responseData.name
+  // Wrapped: { data: { name: "..." } }
+  if (responseData.data?.name) return responseData.data.name
+  // Nested: { data: { tenant: { name: "..." } } }
+  if (responseData.data?.tenant?.name) return responseData.data.tenant.name
+  return fallback
+}
+
 export async function switchTenantHandler(client: BotuyoApiClient, args: Record<string, unknown>) {
   const creds = await readCredentials()
   if (!creds?.token) {
@@ -46,11 +61,11 @@ export async function switchTenantHandler(client: BotuyoApiClient, args: Record<
       const isActive = tid === creds.tenantId
       let name = isActive ? (creds.tenantName || tid) : tid
 
-      // Try to resolve tenant name
+      // Try to resolve tenant name via API
       if (!isActive || name === tid) {
         try {
-          const tRes = await client.get<any>(`/api/v1/tenants/${tid}`)
-          name = tRes.data?.name || tRes.data?.tenant?.name || tid
+          const tRes = await client.get<any>(`/api/tenants/${tid}`)
+          name = extractTenantName(tRes, tid)
         } catch { /* keep tid */ }
       }
 
@@ -91,18 +106,14 @@ export async function switchTenantHandler(client: BotuyoApiClient, args: Record<
   const newToken = switchRes.data.token
   const newRole = switchRes.data.user?.role || roles.find((r) => r.tenantId === targetTenantId)?.role || 'member'
 
-  // Try to get tenant name
+  // Try to get tenant name using the new token
   let tenantName = targetTenantId
   try {
-    const tenantRes = await fetch(`${API_URL}/api/v1/tenants/${targetTenantId}`, {
+    const tenantRes = await fetch(`${API_URL}/api/tenants/${targetTenantId}`, {
       headers: { Authorization: `Bearer ${newToken}` }
     })
     const tenantData = (await tenantRes.json()) as any
-    if (tenantData.success && tenantData.data?.name) {
-      tenantName = tenantData.data.name
-    } else if (tenantData.data?.tenant?.name) {
-      tenantName = tenantData.data.tenant.name
-    }
+    tenantName = extractTenantName(tenantData, targetTenantId)
   } catch {
     // use tenantId as name
   }
@@ -129,3 +140,4 @@ export async function switchTenantHandler(client: BotuyoApiClient, args: Record<
     role: newRole
   }
 }
+

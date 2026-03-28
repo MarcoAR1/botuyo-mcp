@@ -108,7 +108,7 @@ export async function runLogin(args: string[]): Promise<void> {
         const isActive = tid === tenantId
         let name = tid
         try {
-          const tRes = await fetch(`${API_URL}/api/v1/tenants/${tid}`, {
+          const tRes = await fetch(`${API_URL}/api/tenants/${tid}`, {
             headers: { Authorization: `Bearer ${token}` }
           })
           const tData = (await tRes.json()) as any
@@ -169,7 +169,7 @@ export async function runLogin(args: string[]): Promise<void> {
 
   // Try to get the tenant name
   try {
-    const tenantRes = await fetch(`${API_URL}/api/v1/tenants/${tenantId}`, {
+    const tenantRes = await fetch(`${API_URL}/api/tenants/${tenantId}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     const tenantData = (await tenantRes.json()) as any

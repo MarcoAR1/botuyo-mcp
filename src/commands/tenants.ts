@@ -54,7 +54,7 @@ export async function runTenants(): Promise<void> {
     let name = isActive ? (creds.tenantName || tid) : tid
     if (name === tid) {
       try {
-        const tRes = await fetch(`${API_URL}/api/v1/tenants/${tid}`, {
+        const tRes = await fetch(`${API_URL}/api/tenants/${tid}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
         const tData = (await tRes.json()) as any

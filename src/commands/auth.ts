@@ -92,7 +92,7 @@ export async function runAuth(args: string[]): Promise<void> {
   // Resolve the real tenant name via API (OAuth response often only has the ID)
   if (creds.tenantName === creds.tenantId) {
     try {
-      const tRes = await fetch(`${API_URL}/api/v1/tenants/${creds.tenantId}`, {
+      const tRes = await fetch(`${API_URL}/api/tenants/${creds.tenantId}`, {
         headers: { Authorization: `Bearer ${creds.token}` }
       })
       const tData = (await tRes.json()) as any

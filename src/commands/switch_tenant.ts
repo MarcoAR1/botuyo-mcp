@@ -61,7 +61,7 @@ export async function runSwitchTenant(): Promise<void> {
       let name = isActive ? (creds.tenantName || tid) : tid
       if (name === tid) {
         try {
-          const tRes = await fetch(`${API_URL}/api/v1/tenants/${tid}`, {
+          const tRes = await fetch(`${API_URL}/api/tenants/${tid}`, {
             headers: { Authorization: `Bearer ${token}` }
           })
           const tData = (await tRes.json()) as any
@@ -115,7 +115,7 @@ export async function runSwitchTenant(): Promise<void> {
   // Try to get tenant name
   let tenantName = selectedTenantId
   try {
-    const tenantRes = await fetch(`${API_URL}/api/v1/tenants/${selectedTenantId}`, {
+    const tenantRes = await fetch(`${API_URL}/api/tenants/${selectedTenantId}`, {
       headers: { Authorization: `Bearer ${newToken}` }
     })
     const tenantData = (await tenantRes.json()) as any
