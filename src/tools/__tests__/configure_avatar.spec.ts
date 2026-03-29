@@ -29,8 +29,8 @@ describe('listAvatarsHandler', () => {
       .mockGet('/api/avatars/catalog', {
         success: true,
         data: [
-          { _id: 'av1', name: 'Corporate F', modelFormat: 'vrm', category: 'corporate', isPremium: false, modelUrl: 'https://r2/av1.vrm' },
-          { _id: 'av2', name: 'Premium Bot', modelFormat: 'glb', category: 'fantasy', isPremium: true, modelUrl: 'https://r2/av2.glb' }
+          { _id: 'av1', name: 'Corporate F', modelFormat: 'vrm', category: 'corporate', modelUrl: 'https://r2/av1.vrm' },
+          { _id: 'av2', name: 'Fantasy Bot', modelFormat: 'glb', category: 'fantasy', modelUrl: 'https://r2/av2.glb' }
         ]
       })
 
@@ -39,7 +39,6 @@ describe('listAvatarsHandler', () => {
 
     expect(text).toContain('av1')
     expect(text).toContain('Corporate F')
-    expect(text).toContain('[PREMIUM]')
     expect(text).toContain('VRM')
   })
 

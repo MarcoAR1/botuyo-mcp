@@ -3,7 +3,7 @@ import type { BotuyoApiClient } from '../client.js'
 
 export const LIST_AVATARS_TOOL: Tool = {
   name: 'list_avatars',
-  description: 'Lista los avatares 3D disponibles en el catálogo. Muestra nombre, formato, categoría y si es premium.',
+  description: 'Lista los avatares 3D gratuitos disponibles en el catálogo. Muestra nombre, formato y categoría.',
   inputSchema: {
     type: 'object',
     properties: {},
@@ -36,7 +36,6 @@ export async function listAvatarsHandler(client: BotuyoApiClient, _args: Record<
     name: string
     modelFormat: string
     category: string
-    isPremium: boolean
     modelUrl: string
   }>
 
@@ -47,8 +46,7 @@ export async function listAvatarsHandler(client: BotuyoApiClient, _args: Record<
   let output = `Catálogo de avatares 3D (${catalog.length}):\n\n`
 
   for (const avatar of catalog) {
-    const premium = avatar.isPremium ? ' [PREMIUM]' : ''
-    output += `  • ${avatar._id} — ${avatar.name}${premium}\n`
+    output += `  • ${avatar._id} — ${avatar.name}\n`
     output += `    Formato: ${avatar.modelFormat.toUpperCase()} | Categoría: ${avatar.category}\n`
     if (avatar.modelUrl) {
       output += `    URL: ${avatar.modelUrl}\n`
