@@ -5,10 +5,11 @@ on:
     branches:
       - main
     paths:
-      - 'src/**'
       - 'package.json'
-      - 'tsconfig.json'
-      - '.github/workflows/publish.yml'
+
+concurrency:
+  group: mcp-publish-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   publish:
