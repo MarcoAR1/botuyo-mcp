@@ -20,11 +20,9 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
-import { BotuyoApiClient } from './client.js'
+import { BotuyoApiClient, ApiError } from './client.js'
 import { ALL_TOOLS, TOOL_HANDLERS } from './tools/index.js'
-import { resolveToken, readCredentials, clearCredentials, isTokenExpired } from './commands/credentials.js'
-
-const API_URL = process.env.BOTUYO_API_URL || 'https://api.botuyo.com'
+import { resolveToken, readCredentials, clearCredentials, isTokenExpired, resolveApiUrl } from './commands/credentials.js'
 
 // ─── Sub-command routing ──────────────────────────────────────────────────────
 
@@ -79,6 +77,7 @@ async function main() {
       console.log(`Email:    ${creds.email}`)
       console.log(`Tenant:   ${creds.tenantName}`)
       console.log(`Role:     ${creds.role}`)
+      console.log(`API:      ${creds.apiUrl || '(no guardada — se usará default)'}`)
       console.log(`Expira:   ${new Date(creds.expiresAt).toLocaleDateString()}`)
       console.log(`Estado:   ${expired ? '❌ Expirado — ejecutá: npx @botuyo/mcp auth (browser) o npx @botuyo/mcp login (terminal)' : '✅ Activo'}`)
       return
@@ -99,8 +98,9 @@ async function main() {
 }
 
 async function startMcpServer() {
-  // Resolve JWT token — server starts regardless of auth state
+  // Resolve JWT token and API URL — server starts regardless of auth state
   const token = await resolveToken()
+  const apiUrl = await resolveApiUrl()
   let authenticated = false
   let client: BotuyoApiClient | null = null
 
@@ -113,7 +113,8 @@ async function startMcpServer() {
     }
   } else {
     const creds = await readCredentials()
-    client = new BotuyoApiClient({ token, apiUrl: API_URL })
+    client = new BotuyoApiClient({ token, apiUrl })
+    console.error(`[botuyo-mcp] API: ${apiUrl}`)
 
     try {
       const auth = await client.verify()
@@ -155,13 +156,14 @@ async function startMcpServer() {
       const result = await handler(client, args || {})
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : String(error)
+      // Detect expired token via ApiError.status (reliable) or message fallback
+      const is401 = (error instanceof ApiError && error.status === 401) ||
+        (error instanceof Error && (error.message.includes('401') || error.message.includes('expirada') || error.message.includes('expired')))
 
-      // Detect expired token — try to reload credentials from disk (user may have re-authenticated)
-      if (msg.includes('401') || msg.includes('expirada') || msg.includes('expired')) {
+      if (is401) {
+        // Try to reload credentials from disk (user may have re-authenticated)
         const freshToken = await resolveToken()
         if (freshToken && freshToken !== client.getToken()) {
-          // New credentials found on disk — hot-swap and retry once
           client.setToken(freshToken)
           console.error('[botuyo-mcp] ✓ Credenciales recargadas desde disco, reintentando...')
           try {
@@ -179,6 +181,7 @@ async function startMcpServer() {
         }
       }
 
+      const msg = error instanceof Error ? error.message : String(error)
       return { content: [{ type: 'text', text: `Error: ${msg}` }], isError: true }
     }
   })

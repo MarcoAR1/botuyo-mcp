@@ -14,31 +14,24 @@
  */
 
 import * as readline from 'readline'
-import { readCredentials, saveCredentials, clearCredentials, verifyTokenWithServer, BotuyoCredentials } from './credentials.js'
-
-const API_URL = process.env.BOTUYO_API_URL || 'https://api.botuyo.com'
+import { saveCredentials, checkExistingSession, resolveApiUrl, BotuyoCredentials, fetchUserInfo, resolveTenantName } from './credentials.js'
 
 export async function runLogin(args: string[]): Promise<void> {
   console.log('\n🤖 BotUyo MCP — Login\n')
 
-  const existing = await readCredentials()
-  if (existing && !args.includes('--force')) {
-    const localExpired = existing.expiresAt && new Date(existing.expiresAt) < new Date()
-    if (localExpired) {
-      await clearCredentials()
-      console.log('⚠️  Tu sesión expiró. Vamos a re-autenticarte.\n')
-    } else {
-      // Verify token is still valid on server
-      const valid = await verifyTokenWithServer(existing.token, API_URL)
-      if (valid) {
-        console.log(`✅ Ya estás autenticado como: ${existing.email}`)
-        console.log(`   Tenant: ${existing.tenantName} (${existing.role})`)
-        console.log('\n   Usá --force para re-autenticarte.')
-        console.log('   O usá `npx @botuyo/mcp auth` para login por browser (OAuth).\n')
-        return
-      }
-      console.log('⚠️  Tu sesión ya no es válida en el servidor. Vamos a re-autenticarte.\n')
-    }
+  const API_URL = process.env.BOTUYO_API_URL || await resolveApiUrl()
+  const force = args.includes('--force')
+
+  const existing = await checkExistingSession(API_URL, force)
+  if (existing) {
+    console.log(`✅ Ya estás autenticado como: ${existing.email}`)
+    console.log(`   Tenant: ${existing.tenantName} (${existing.role})`)
+    console.log('\n   Usá --force para re-autenticarte.')
+    console.log('   O usá `npx @botuyo/mcp auth` para login por browser (OAuth).\n')
+    return
+  }
+  if (!force) {
+    console.log('⚠️  Sesión expirada o inválida. Vamos a re-autenticarte.\n')
   }
 
   // Offer login method choice
@@ -65,6 +58,7 @@ export async function runLogin(args: string[]): Promise<void> {
   }
 
   console.log('\n⏳ Autenticando...')
+  console.log(`   API: ${API_URL}\n`)
 
   // 1. Login
   const loginRes = await fetch(`${API_URL}/api/auth/login`, {
@@ -83,19 +77,15 @@ export async function runLogin(args: string[]): Promise<void> {
   let tenantId = loginData.data.tenantId
 
   // 2. Get user info and tenants
-  const meRes = await fetch(`${API_URL}/api/auth/me`, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  const meData = (await meRes.json()) as any
-
-  if (!meData.success) {
-    console.error(`❌ Error al obtener info del usuario: ${meData.error}`)
+  let userInfo
+  try {
+    userInfo = await fetchUserInfo(API_URL, token)
+  } catch (err: any) {
+    console.error(`❌ Error al obtener info del usuario: ${err.message}`)
     process.exit(1)
   }
 
-  const user = meData.data.user
-  const tenantIds: string[] = user.tenantIds || []
-  const roles: Array<{ tenantId: string; role: string }> = user.roles || []
+  const { tenantIds, roles } = userInfo
 
   // 3. If multiple tenants, ask user to pick
   if (tenantIds.length > 1) {
@@ -106,14 +96,7 @@ export async function runLogin(args: string[]): Promise<void> {
       tenantIds.map(async (tid: string, i: number) => {
         const role = roles.find((r: any) => r.tenantId === tid)?.role || 'member'
         const isActive = tid === tenantId
-        let name = tid
-        try {
-          const tRes = await fetch(`${API_URL}/api/tenants/${tid}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-          const tData = (await tRes.json()) as any
-          name = tData.data?.name || tData.data?.tenant?.name || tid
-        } catch { /* keep tid as fallback */ }
+        const name = await resolveTenantName(API_URL, token, tid)
         return { id: tid, name, role, isActive, index: i + 1 }
       })
     )
@@ -164,23 +147,12 @@ export async function runLogin(args: string[]): Promise<void> {
     role: activeRole,
     email: email.trim(),
     savedAt: new Date().toISOString(),
-    expiresAt
+    expiresAt,
+    apiUrl: API_URL
   }
 
-  // Try to get the tenant name
-  try {
-    const tenantRes = await fetch(`${API_URL}/api/tenants/${tenantId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    const tenantData = (await tenantRes.json()) as any
-    if (tenantData.success && tenantData.data?.name) {
-      creds.tenantName = tenantData.data.name
-    } else if (tenantData.data?.tenant?.name) {
-      creds.tenantName = tenantData.data.tenant.name
-    }
-  } catch {
-    // If we can't get the name, tenantId is fine
-  }
+  // Resolve tenant display name
+  creds.tenantName = await resolveTenantName(API_URL, token, tenantId)
 
   await saveCredentials(creds)
 

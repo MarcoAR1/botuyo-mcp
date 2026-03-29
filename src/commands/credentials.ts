@@ -18,6 +18,7 @@ export interface BotuyoCredentials {
   email: string
   savedAt: string
   expiresAt: string // ISO date when the JWT expires
+  apiUrl?: string   // API URL used during login (persisted so MCP server uses the same backend)
 }
 
 export async function readCredentials(): Promise<BotuyoCredentials | null> {
@@ -74,28 +75,108 @@ export async function isTokenExpired(): Promise<boolean> {
 }
 
 /**
- * Verify a token with the server (GET /api/auth/me).
- * Returns true if valid, false if expired/invalid.
- * On failure, auto-clears stored credentials.
+ * Resolve the API URL to use, in priority order:
+ * 1. BOTUYO_API_URL env var
+ * 2. apiUrl from ~/.botuyo/credentials.json
+ * 3. Default: https://api.botuyo.com
  */
-export async function verifyTokenWithServer(token: string, apiUrl?: string): Promise<boolean> {
-  const url = apiUrl || process.env.BOTUYO_API_URL || 'https://api.botuyo.com'
+export const DEFAULT_API_URL = 'https://api.botuyo.com'
+
+export async function resolveApiUrl(): Promise<string> {
+  if (process.env.BOTUYO_API_URL) return process.env.BOTUYO_API_URL
+
+  const creds = await readCredentials()
+  if (creds?.apiUrl) return creds.apiUrl
+
+  return DEFAULT_API_URL
+}
+
+/**
+ * Check if there is a valid existing session.
+ * Returns the credentials if valid, null if re-auth is needed.
+ *
+ * Logic:
+ * 1. No credentials on disk → null
+ * 2. Locally expired → clear + null
+ * 3. force=true → null (skip validation)
+ * 4. Server rejects token → clear + null
+ * 5. Network error → assume valid (return creds)
+ * 6. Valid → return creds
+ */
+export async function checkExistingSession(apiUrl: string, force: boolean): Promise<BotuyoCredentials | null> {
+  const creds = await readCredentials()
+  if (!creds) return null
+
+  // Locally expired
+  if (creds.expiresAt && new Date(creds.expiresAt) < new Date()) {
+    await clearCredentials()
+    return null
+  }
+
+  // Force re-auth
+  if (force) return null
+
+  // Verify with server
   try {
-    const res = await fetch(`${url}/api/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` }
+    const res = await fetch(`${apiUrl}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${creds.token}` }
     })
     if (!res.ok) {
       await clearCredentials()
-      return false
+      return null
     }
     const body = await res.json() as any
     if (!body.success) {
       await clearCredentials()
-      return false
+      return null
     }
-    return true
+    return creds
   } catch {
-    // Network error — don't clear credentials, just can't verify
-    return true
+    // Network error — don't clear, assume valid
+    return creds
+  }
+}
+
+// ── Shared API helpers (used by login, auth, tenants, switch_tenant) ─────────
+
+export interface UserInfo {
+  tenantIds: string[]
+  roles: Array<{ tenantId: string; role: string }>
+  email: string
+}
+
+/**
+ * Fetch the current user's info from GET /api/auth/me.
+ * Returns parsed UserInfo or throws on failure.
+ */
+export async function fetchUserInfo(apiUrl: string, token: string): Promise<UserInfo> {
+  const res = await fetch(`${apiUrl}/api/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  const data = (await res.json()) as any
+  if (!data.success) {
+    throw new Error(data.error || 'Failed to fetch user info')
+  }
+  const user = data.data.user
+  return {
+    tenantIds: user.tenantIds || [],
+    roles: user.roles || [],
+    email: user.email
+  }
+}
+
+/**
+ * Resolve a tenant's display name via GET /api/tenants/:id.
+ * Returns the name or the tenantId as fallback (never throws).
+ */
+export async function resolveTenantName(apiUrl: string, token: string, tenantId: string): Promise<string> {
+  try {
+    const res = await fetch(`${apiUrl}/api/tenants/${tenantId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const data = (await res.json()) as any
+    return data.data?.name || data.data?.tenant?.name || tenantId
+  } catch {
+    return tenantId
   }
 }

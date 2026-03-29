@@ -7,35 +7,30 @@
  * Lists all tenants the current user belongs to with their roles.
  */
 
-import { readCredentials, resolveToken } from './credentials.js'
-
-const API_URL = process.env.BOTUYO_API_URL || 'https://api.botuyo.com'
+import { readCredentials, resolveToken, resolveApiUrl, fetchUserInfo, resolveTenantName } from './credentials.js'
 
 export async function runTenants(): Promise<void> {
   console.log('\n📋 BotUyo MCP — Mis Tenants\n')
 
   const token = await resolveToken()
   const creds = await readCredentials()
+  const API_URL = await resolveApiUrl()
 
   if (!token || !creds) {
     console.error('❌ No estás autenticado. Ejecutá: npx @botuyo/mcp auth (browser) o npx @botuyo/mcp login (terminal)')
     process.exit(1)
   }
 
-  const meRes = await fetch(`${API_URL}/api/auth/me`, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  const meData = (await meRes.json()) as any
-
-  if (!meData.success) {
-    console.error(`❌ Sesión inválida: ${meData.error || 'Token expirado'}`)
+  let userInfo
+  try {
+    userInfo = await fetchUserInfo(API_URL, token)
+  } catch (err: any) {
+    console.error(`❌ Sesión inválida: ${err.message || 'Token expirado'}`)
     console.error('   Ejecutá: npx @botuyo/mcp auth (browser) o npx @botuyo/mcp login (terminal)')
     process.exit(1)
   }
 
-  const user = meData.data.user
-  const tenantIds: string[] = user.tenantIds || []
-  const roles: Array<{ tenantId: string; role: string }> = user.roles || []
+  const { tenantIds, roles } = userInfo
 
   if (tenantIds.length === 0) {
     console.log('No tenés tenants disponibles.\n')
@@ -53,13 +48,7 @@ export async function runTenants(): Promise<void> {
     const isActive = tid === creds.tenantId
     let name = isActive ? (creds.tenantName || tid) : tid
     if (name === tid) {
-      try {
-        const tRes = await fetch(`${API_URL}/api/tenants/${tid}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-        const tData = (await tRes.json()) as any
-        name = tData.data?.name || tData.data?.tenant?.name || tid
-      } catch { /* keep tid as fallback */ }
+      name = await resolveTenantName(API_URL, token, tid)
     }
     const status = isActive ? '✓ activo' : ''
     console.log(`  ${i + 1}   ${name.padEnd(37)} ${role.padEnd(10)} ${status}`)

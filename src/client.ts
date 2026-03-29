@@ -6,6 +6,15 @@
  * Requires Node 18+ (native fetch).
  */
 
+export class ApiError extends Error {
+  public readonly status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+  }
+}
+
 export interface BotuyoClientConfig {
   apiUrl: string
   token: string
@@ -107,11 +116,17 @@ export class BotuyoApiClient {
   }
 
   private async handleResponse(res: Response): Promise<any> {
-    const json = await this.parseJson(res)
+    const text = await res.text()
+    let json: any
+    try {
+      json = JSON.parse(text)
+    } catch {
+      throw new ApiError(`HTTP ${res.status}: ${text.slice(0, 200)}`, res.status)
+    }
 
-    // Detect expired token
-    if (res.status === 401) {
-      throw new Error('Sesión expirada. Ejecutá: npx @botuyo/mcp auth (browser) o npx @botuyo/mcp login (terminal)')
+    if (!res.ok) {
+      const msg = json.error || `HTTP ${res.status}`
+      throw new ApiError(msg, res.status)
     }
 
     return json
@@ -150,12 +165,12 @@ export class BotuyoApiClient {
     try {
       const json = JSON.parse(text)
       if (!res.ok && !json.success) {
-        throw new Error(json.error || `HTTP ${res.status}`)
+        throw new ApiError(json.error || `HTTP ${res.status}`, res.status)
       }
       return json
     } catch (e) {
-      if (e instanceof Error && e.message.includes('HTTP')) throw e
-      throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`)
+      if (e instanceof ApiError) throw e
+      throw new ApiError(`HTTP ${res.status}: ${text.slice(0, 200)}`, res.status)
     }
   }
 }

@@ -18,33 +18,27 @@
 import http from 'http'
 import { URL } from 'url'
 import { execSync } from 'child_process'
-import { readCredentials, saveCredentials, clearCredentials, verifyTokenWithServer, BotuyoCredentials } from './credentials.js'
+import { saveCredentials, checkExistingSession, resolveApiUrl, BotuyoCredentials, resolveTenantName } from './credentials.js'
 import os from 'os'
 
 const ADMIN_URL = process.env.BOTUYO_ADMIN_URL || 'https://botuyo.com'
-const API_URL = process.env.BOTUYO_API_URL || 'https://api.botuyo.com'
 
 export async function runAuth(args: string[]): Promise<void> {
   console.log('\n🤖 BotUyo MCP — Autenticación por Browser\n')
 
-  const existing = await readCredentials()
-  if (existing && !args.includes('--force')) {
-    const localExpired = existing.expiresAt && new Date(existing.expiresAt) < new Date()
-    if (localExpired) {
-      await clearCredentials()
-      console.log('⚠️  Tu sesión expiró. Vamos a re-autenticarte.\n')
-    } else {
-      // Verify token is still valid on server
-      const valid = await verifyTokenWithServer(existing.token, API_URL)
-      if (valid) {
-        console.log(`✅ Ya estás autenticado como: ${existing.email || 'usuario'}`)
-        console.log(`   Tenant: ${existing.tenantName} (${existing.role})`)
-        console.log('\n   Usá --force para re-autenticarte.')
-        console.log('   O usá `npx @botuyo/mcp login` para login por terminal.\n')
-        return
-      }
-      console.log('⚠️  Tu sesión ya no es válida en el servidor. Vamos a re-autenticarte.\n')
-    }
+  const API_URL = process.env.BOTUYO_API_URL || await resolveApiUrl()
+  const force = args.includes('--force')
+
+  const existing = await checkExistingSession(API_URL, force)
+  if (existing) {
+    console.log(`✅ Ya estás autenticado como: ${existing.email || 'usuario'}`)
+    console.log(`   Tenant: ${existing.tenantName} (${existing.role})`)
+    console.log('\n   Usá --force para re-autenticarte.')
+    console.log('   O usá `npx @botuyo/mcp login` para login por terminal.\n')
+    return
+  }
+  if (!force) {
+    console.log('⚠️  Sesión expirada o inválida. Vamos a re-autenticarte.\n')
   }
 
   // Start local callback server
@@ -86,19 +80,13 @@ export async function runAuth(args: string[]): Promise<void> {
     role: tokenData.data.role || 'viewer',
     email: tokenData.data.callerEmail || '',
     savedAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+    apiUrl: API_URL
   }
 
-  // Resolve the real tenant name via API (OAuth response often only has the ID)
+  // Resolve the real tenant name via shared helper
   if (creds.tenantName === creds.tenantId) {
-    try {
-      const tRes = await fetch(`${API_URL}/api/tenants/${creds.tenantId}`, {
-        headers: { Authorization: `Bearer ${creds.token}` }
-      })
-      const tData = (await tRes.json()) as any
-      const name = tData.data?.name || tData.data?.tenant?.name
-      if (name) creds.tenantName = name
-    } catch { /* keep ID as fallback */ }
+    creds.tenantName = await resolveTenantName(API_URL, creds.token, creds.tenantId)
   }
 
   await saveCredentials(creds)

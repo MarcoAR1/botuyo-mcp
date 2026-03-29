@@ -9,15 +9,14 @@
  */
 
 import * as readline from 'readline'
-import { readCredentials, saveCredentials, resolveToken } from './credentials.js'
-
-const API_URL = process.env.BOTUYO_API_URL || 'https://api.botuyo.com'
+import { readCredentials, saveCredentials, resolveToken, resolveApiUrl, fetchUserInfo, resolveTenantName } from './credentials.js'
 
 export async function runSwitchTenant(): Promise<void> {
   console.log('\n🔄 BotUyo MCP — Switch Tenant\n')
 
   const token = await resolveToken()
   const creds = await readCredentials()
+  const API_URL = await resolveApiUrl()
 
   if (!token || !creds) {
     console.error('❌ No estás autenticado. Ejecutá: npx @botuyo/mcp auth (browser) o npx @botuyo/mcp login (terminal)')
@@ -25,20 +24,16 @@ export async function runSwitchTenant(): Promise<void> {
   }
 
   // Get user's tenants
-  const meRes = await fetch(`${API_URL}/api/auth/me`, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  const meData = (await meRes.json()) as any
-
-  if (!meData.success) {
-    console.error(`❌ Sesión inválida: ${meData.error || 'Token expirado'}`)
+  let userInfo
+  try {
+    userInfo = await fetchUserInfo(API_URL, token)
+  } catch (err: any) {
+    console.error(`❌ Sesión inválida: ${err.message || 'Token expirado'}`)
     console.error('   Ejecutá: npx @botuyo/mcp auth (browser) o npx @botuyo/mcp login (terminal)')
     process.exit(1)
   }
 
-  const user = meData.data.user
-  const tenantIds: string[] = user.tenantIds || []
-  const roles: Array<{ tenantId: string; role: string }> = user.roles || []
+  const { tenantIds, roles } = userInfo
 
   if (tenantIds.length === 0) {
     console.log('No tenés tenants disponibles.')
@@ -60,13 +55,7 @@ export async function runSwitchTenant(): Promise<void> {
       const isActive = tid === creds.tenantId
       let name = isActive ? (creds.tenantName || tid) : tid
       if (name === tid) {
-        try {
-          const tRes = await fetch(`${API_URL}/api/tenants/${tid}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-          const tData = (await tRes.json()) as any
-          name = tData.data?.name || tData.data?.tenant?.name || tid
-        } catch { /* keep tid as fallback */ }
+        name = await resolveTenantName(API_URL, token, tid)
       }
       return { id: tid, name, role, isActive, index: i + 1 }
     })
@@ -112,21 +101,7 @@ export async function runSwitchTenant(): Promise<void> {
   const newToken = switchData.data.token
   const newRole = switchData.data.user?.role || roles.find((r: any) => r.tenantId === selectedTenantId)?.role || 'member'
 
-  // Try to get tenant name
-  let tenantName = selectedTenantId
-  try {
-    const tenantRes = await fetch(`${API_URL}/api/tenants/${selectedTenantId}`, {
-      headers: { Authorization: `Bearer ${newToken}` }
-    })
-    const tenantData = (await tenantRes.json()) as any
-    if (tenantData.success && tenantData.data?.name) {
-      tenantName = tenantData.data.name
-    } else if (tenantData.data?.tenant?.name) {
-      tenantName = tenantData.data.tenant.name
-    }
-  } catch {
-    // use tenantId
-  }
+  const tenantName = await resolveTenantName(API_URL, newToken, selectedTenantId)
 
   await saveCredentials({
     ...creds,
