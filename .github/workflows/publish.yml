@@ -25,34 +25,26 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build
-        run: npm run build
-
-      - name: Check if version changed
-        id: version_check
-        run: |
-          PUBLISHED=$(npm show @botuyo/mcp version 2>/dev/null || echo "0.0.0")
-          LOCAL=$(node -p "require('./package.json').version")
-          echo "published=$PUBLISHED" >> $GITHUB_OUTPUT
-          echo "local=$LOCAL" >> $GITHUB_OUTPUT
-          if [ "$LOCAL" != "$PUBLISHED" ]; then
-            echo "should_publish=true" >> $GITHUB_OUTPUT
-          else
-            echo "should_publish=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Publish to npm
-        if: steps.version_check.outputs.should_publish == 'true'
-        run: npm publish --access public
+      - name: Build + Publish (Exclusive Lock)
+        shell: bash
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          mkdir -p /tmp/botuyo-locks
+          flock -w 600 /tmp/botuyo-locks/deploy.lock bash -c '
+            npm install
+            npm run build
 
-      - name: Skip (version unchanged)
-        if: steps.version_check.outputs.should_publish == 'false'
-        run: echo "Version ${{ steps.version_check.outputs.local }} already published on npm — bump package.json to trigger a new publish."
+            PUBLISHED=$(npm show @botuyo/mcp version 2>/dev/null || echo "0.0.0")
+            LOCAL=$(node -p "require(\"./package.json\").version")
+
+            if [ "$LOCAL" != "$PUBLISHED" ]; then
+              npm publish --access public
+              echo "Published v$LOCAL to npm"
+            else
+              echo "Version $LOCAL already published — skipped"
+            fi
+          '
 
       - name: Notify Result
         if: always()
@@ -61,8 +53,6 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
           DEPLOY_STATUS: ${{ job.status }}
-          PUBLISHED_VERSION: ${{ steps.version_check.outputs.local }}
-          SHOULD_PUBLISH: ${{ steps.version_check.outputs.should_publish }}
           COMMIT_MSG: ${{ github.event.head_commit.message }}
           COMMIT_SHA: ${{ github.sha }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -74,14 +64,9 @@ jobs:
 
           status = os.environ['DEPLOY_STATUS']
           icon = '\u2705' if status == 'success' else '\u274c'
-          version = os.environ.get('PUBLISHED_VERSION', '?')
-          published = os.environ.get('SHOULD_PUBLISH', 'false') == 'true'
-
-          action = f'Published v{version}' if published else f'Skipped (v{version} already on npm)'
 
           body = f"""{icon} MCP Publish: {status.upper()}
 
-          Action: {action}
           Commit: {os.environ.get('COMMIT_MSG', 'N/A')}
           SHA:    {os.environ['COMMIT_SHA'][:8]}
           Author: {os.environ['ACTOR']}
