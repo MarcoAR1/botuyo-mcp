@@ -258,15 +258,17 @@ export async function exampleAgentHandler() {
       // -- 3D Avatar for Voice Calls --
       avatar3dUrl: 'https://example.com/model.glb',
 
-      // -- Avatar Animations (emotion → image URL for animated expressions) --
+      // -- 2D Emotion Images (shown based on bot emotional state) --
       avatarAnimations: {
-        happy: 'https://cdn.botuyo.com/animations/happy.webp',
-        thinking: 'https://cdn.botuyo.com/animations/thinking.webp',
-        greeting: 'https://cdn.botuyo.com/animations/greeting.webp'
+        default: 'https://cdn.botuyo.com/emotions/default.webp',
+        happy: 'https://cdn.botuyo.com/emotions/happy.webp',
+        thinking: 'https://cdn.botuyo.com/emotions/thinking.webp',
+        angry: 'https://cdn.botuyo.com/emotions/angry.webp'
       },
       avatar2dAnimations: {
-        idle: 'https://cdn.botuyo.com/animations/2d-idle.webp',
-        talking: 'https://cdn.botuyo.com/animations/2d-talking.webp'
+        default: 'https://cdn.botuyo.com/emotions/2d-default.webp',
+        happy: 'https://cdn.botuyo.com/emotions/2d-happy.webp',
+        confused: 'https://cdn.botuyo.com/emotions/2d-confused.webp'
       },
 
       // -- Light Mode CSS Variables --
@@ -346,8 +348,8 @@ export async function exampleAgentHandler() {
       logoUrl: 'Optional. String. Widget logo URL. Use upload_agent_media tool with mediaType "logo" to upload and auto-assign.',
       inputPlaceholder: 'Optional. String. Placeholder text in the chat input field.',
       theme: 'Optional. "light" | "dark" | "auto". Controls widget color scheme. "auto" follows the host page prefers-color-scheme.',
-      avatarAnimations: 'Optional. Object. Keys are emotion names (happy, thinking, greeting, etc.), values are image URLs. Used for animated avatar expressions.',
-      avatar2dAnimations: 'Optional. Object. Keys are animation states (idle, talking, etc.), values are image URLs. For 2D avatar animations.',
+      avatarAnimations: 'Optional. Object. Keys are emotion states (default, happy, angry, thinking, confused, sorry, writing, wink, love), values are image URLs. Shown based on bot emotional state via [emotion:X] tags.',
+      avatar2dAnimations: 'Optional. Object. Same emotion keys as avatarAnimations. Separate set of 2D emotion images (used as fallback or alternative rendering).',
       cssVariables: 'HSL values WITHOUT the hsl() wrapper. "primary" and "primaryForeground" are your brand colors — they are preserved in both light and dark mode.',
       darkCssVariables: 'Optional. Overrides ONLY the surface colors (background, card, muted, border, etc.) for dark mode. ' +
         'primary/primaryForeground from cssVariables are ALWAYS preserved. Dark mode activates automatically when the host page uses prefers-color-scheme: dark.',
