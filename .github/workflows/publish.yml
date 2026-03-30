@@ -16,6 +16,20 @@ jobs:
     timeout-minutes: 15
 
     steps:
+      - name: Cleanup orphaned processes
+        shell: bash
+        run: |
+          # Kill any leftover processes from previous cancelled runs
+          pkill -f "flock.*botuyo-locks/mcp" 2>/dev/null || true
+          pkill -f "npm.*publish" 2>/dev/null || true
+          if [ -f /tmp/botuyo-locks/mcp.lock ]; then
+            LOCK_PID=$(flock -n /tmp/botuyo-locks/mcp.lock echo "free" 2>/dev/null)
+            if [ "$LOCK_PID" = "free" ]; then
+              rm -f /tmp/botuyo-locks/mcp.lock
+            fi
+          fi
+          sleep 1
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -65,11 +79,14 @@ jobs:
 
       - name: Build + Publish (Exclusive Lock)
         shell: bash
+        timeout-minutes: 10
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           mkdir -p /tmp/botuyo-locks
-          flock -w 600 /tmp/botuyo-locks/mcp.lock bash -c '
+          cleanup() { kill 0 2>/dev/null; exit 1; }
+          trap cleanup SIGTERM SIGINT SIGHUP
+          flock -w 120 /tmp/botuyo-locks/mcp.lock bash -c '
             npm install
             npm run build
 

@@ -80,7 +80,8 @@ Use `get_agent_status` to check which channels are connected. It returns a direc
 ## Build from source
 
 ```sh
-cd packages/mcp
+git clone https://github.com/MarcoAR1/botuyo-mcp.git
+cd botuyo-mcp
 npm install
 npm run build
 ```
@@ -88,6 +89,19 @@ npm run build
 ## Test with MCP Inspector
 
 ```sh
-cd packages/mcp
 BOTUYO_API_KEY=pk_live_... npm run inspect
 ```
+
+## Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+Please note that this project follows a [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Security
+
+To report a vulnerability, see [SECURITY.md](SECURITY.md).
+
+## License
+
+[MIT](LICENSE) © BotUyo

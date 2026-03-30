@@ -43,8 +43,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/MarcoAR1/botuyo-backend.git",
-    "directory": "packages/mcp"
+    "url": "https://github.com/MarcoAR1/botuyo-mcp.git"
   },
   "homepage": "https://botuyo.com",
   "license": "MIT"
