@@ -25,6 +25,7 @@ import { DELETE_AGENT_TOOL, deleteAgentHandler } from './delete_agent.js'
 import { LIST_KNOWLEDGE_DOCS_TOOL, listKnowledgeDocsHandler } from './list_knowledge_docs.js'
 import { DELETE_KNOWLEDGE_DOC_TOOL, deleteKnowledgeDocHandler } from './delete_knowledge_doc.js'
 import { ASSOCIATE_KNOWLEDGE_TOOL, associateKnowledgeHandler } from './associate_knowledge.js'
+import { INGEST_KNOWLEDGE_URL_TOOL, ingestKnowledgeUrlHandler } from './ingest_knowledge_url.js'
 
 import { CONFIGURE_AGENT_TOOL, configureAgentToolHandler } from './configure_agent_tool.js'
 import { LIST_TOOL_CONFIGS_TOOL, listToolConfigsHandler } from './list_tool_configs.js'
@@ -55,6 +56,7 @@ export const ALL_TOOLS: Tool[] = [
   LIST_KNOWLEDGE_DOCS_TOOL,
   DELETE_KNOWLEDGE_DOC_TOOL,
   ASSOCIATE_KNOWLEDGE_TOOL,
+  INGEST_KNOWLEDGE_URL_TOOL,
   CONFIGURE_AGENT_TOOL,
   LIST_TOOL_CONFIGS_TOOL,
   REMOVE_TOOL_CONFIG_TOOL,
@@ -89,6 +91,7 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
   list_knowledge_documents: listKnowledgeDocsHandler,
   delete_knowledge_document: deleteKnowledgeDocHandler,
   associate_knowledge_to_agent: associateKnowledgeHandler,
+  ingest_knowledge_url: ingestKnowledgeUrlHandler,
   configure_agent_tool: configureAgentToolHandler,
   list_tool_configs: listToolConfigsHandler,
   remove_tool_config: removeToolConfigHandler,
