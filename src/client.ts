@@ -30,6 +30,7 @@ export interface AuthInfo {
 export class BotuyoApiClient {
   private config: BotuyoClientConfig
   private authInfo: AuthInfo | null = null
+  private activeTenantId: string | null = null // Track tenant set by switch_tenant
 
   constructor(config: BotuyoClientConfig) {
     this.config = config
@@ -41,9 +42,10 @@ export class BotuyoApiClient {
   }
 
   /** Hot-swap the JWT token (used by switch_tenant) */
-  setToken(token: string) {
+  setToken(token: string, tenantId?: string) {
     this.config = { ...this.config, token }
     this.authInfo = null // reset cached auth info
+    if (tenantId) this.activeTenantId = tenantId
   }
 
   /** Verify the stored JWT is still valid by calling GET /api/auth/me */
@@ -60,10 +62,12 @@ export class BotuyoApiClient {
     }
 
     const user = body.data.user
+    // Use activeTenantId (from switch_tenant) if set, otherwise fall back to first tenant
+    const resolvedTenantId = this.activeTenantId || user.tenantIds?.[0] || ''
     this.authInfo = {
-      tenantId: user.tenantIds?.[0] || '',
+      tenantId: resolvedTenantId,
       tenantName: '', // Will be enriched from credentials
-      role: user.roles?.[0]?.role || 'member',
+      role: user.roles?.find((r: any) => r.tenantId === resolvedTenantId)?.role || user.roles?.[0]?.role || 'member',
       email: user.email
     }
 

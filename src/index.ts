@@ -23,6 +23,9 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { BotuyoApiClient, ApiError } from './client.js'
 import { ALL_TOOLS, TOOL_HANDLERS } from './tools/index.js'
 import { resolveToken, readCredentials, clearCredentials, isTokenExpired, resolveApiUrl } from './commands/credentials.js'
+import { watch, existsSync, mkdirSync } from 'fs'
+import { join } from 'path'
+import { homedir } from 'os'
 
 // ─── Sub-command routing ──────────────────────────────────────────────────────
 
@@ -114,6 +117,8 @@ async function startMcpServer() {
   } else {
     const creds = await readCredentials()
     client = new BotuyoApiClient({ token, apiUrl })
+    // Restore active tenant from prior switch_tenant session
+    if (creds?.tenantId) client.setToken(token, creds.tenantId)
     console.error(`[botuyo-mcp] API: ${apiUrl}`)
 
     try {
@@ -131,6 +136,41 @@ async function startMcpServer() {
 
   const AUTH_ERROR_MSG = 'No autenticado. El usuario debe ejecutar: npx @botuyo/mcp login'
 
+  // ── Hot-reload: try to authenticate from disk credentials ─────────────
+  async function tryHotReload(): Promise<boolean> {
+    const freshToken = await resolveToken()
+    if (!freshToken) return false
+
+    const freshCreds = await readCredentials()
+    const freshApiUrl = freshCreds?.apiUrl || apiUrl
+
+    // Create or update client
+    if (!client) {
+      client = new BotuyoApiClient({ token: freshToken, apiUrl: freshApiUrl })
+    } else {
+      client.setToken(freshToken, freshCreds?.tenantId)
+    }
+
+    try {
+      const auth = await client.verify()
+      const tenantName = freshCreds?.tenantName || auth.tenantId
+      const role = freshCreds?.role || auth.role
+      console.error(`[botuyo-mcp] 🔄 Hot-reload: conectado a "${tenantName}" como ${role}`)
+      authenticated = true
+      return true
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error(`[botuyo-mcp] 🔄 Hot-reload: auth failed: ${msg}`)
+      return false
+    }
+  }
+
+  // ── Watch credentials file for changes (auto-restart on login/auth) ───
+  watchCredentialsFile(async () => {
+    console.error('[botuyo-mcp] 🔄 Credentials file changed — reloading authentication...')
+    await tryHotReload()
+  })
+
   // ── MCP Server — starts ALWAYS, even without valid auth ────────────────
   const server = new Server(
     { name: 'botuyo-mcp', version: '0.3.0' },
@@ -147,9 +187,12 @@ async function startMcpServer() {
       return { content: [{ type: 'text', text: `Unknown tool: ${name}` }], isError: true }
     }
 
-    // Guard: if not authenticated, every tool returns a login prompt
+    // Guard: if not authenticated, attempt hot-reload from disk before rejecting
     if (!authenticated || !client) {
-      return { content: [{ type: 'text', text: AUTH_ERROR_MSG }], isError: true }
+      const reloaded = await tryHotReload()
+      if (!reloaded || !client) {
+        return { content: [{ type: 'text', text: AUTH_ERROR_MSG }], isError: true }
+      }
     }
 
     try {
@@ -191,7 +234,42 @@ async function startMcpServer() {
   console.error('[botuyo-mcp] Server running via stdio')
 }
 
+// ── Credentials file watcher ─────────────────────────────────────────────────
+// Watches ~/.botuyo/credentials.json for changes. When the user runs `login` or
+// `auth` in a separate terminal, the file is written and we auto-reload auth.
+// Uses a debounce to handle rapid/duplicate fs events on Windows.
+
+function watchCredentialsFile(onChanged: () => void): void {
+  const configDir = join(homedir(), '.botuyo')
+  const credFile = join(configDir, 'credentials.json')
+
+  // Ensure the directory exists (login may not have run yet)
+  if (!existsSync(configDir)) {
+    mkdirSync(configDir, { recursive: true })
+  }
+
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+  try {
+    // Watch the directory (more reliable than watching a file that may not exist)
+    watch(configDir, (eventType, filename) => {
+      if (filename !== 'credentials.json') return
+
+      // Debounce: fs.watch fires multiple events per write on Windows
+      if (debounceTimer) clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(() => {
+        onChanged()
+      }, 500)
+    })
+    console.error(`[botuyo-mcp] 👁 Watching ${credFile} for auth changes`)
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error(`[botuyo-mcp] ⚠ Could not watch credentials file: ${msg}`)
+  }
+}
+
 main().catch((err) => {
   console.error('[botuyo-mcp] Fatal error:', err)
   process.exit(1)
 })
+

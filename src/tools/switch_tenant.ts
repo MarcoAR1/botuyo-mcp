@@ -142,7 +142,7 @@ export async function switchTenantHandler(client: BotuyoApiClient, args: Record<
   })
 
   // Hot-swap the token in the running client so it takes effect immediately
-  client.setToken(newToken)
+  client.setToken(newToken, targetTenantId)
 
   return {
     success: true,
