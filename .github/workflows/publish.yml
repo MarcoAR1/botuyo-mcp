@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths: ['package.json']
+  workflow_dispatch:
 
 concurrency:
   group: mcp-publish
@@ -12,7 +13,7 @@ concurrency:
 jobs:
   publish:
     name: Build and publish @botuyo/mcp
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       id-token: write
@@ -23,6 +24,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Notify Deploy Started
+        continue-on-error: true
         shell: bash
         env:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
@@ -69,28 +71,26 @@ jobs:
       - name: Ensure latest npm
         run: npm install -g npm@latest
 
-      - name: Build + Publish (Exclusive Lock)
+      - name: Build + Publish
         shell: bash
         timeout-minutes: 10
         run: |
-          mkdir -p /tmp/botuyo-locks
-          flock -w 600 /tmp/botuyo-locks/global-deploy.lock bash -c '
-            npm install
-            npm run build
+          npm install
+          npm run build
 
-            PUBLISHED=$(npm show @botuyo/mcp version 2>/dev/null || echo "0.0.0")
-            LOCAL=$(node -p "require(\"./package.json\").version")
+          PUBLISHED=$(npm show @botuyo/mcp version 2>/dev/null || echo "0.0.0")
+          LOCAL=$(node -p "require('./package.json').version")
 
-            if [ "$LOCAL" != "$PUBLISHED" ]; then
-              npm publish --access public
-              echo "Published v$LOCAL to npm"
-            else
-              echo "Version $LOCAL already published — skipped"
-            fi
-          '
+          if [ "$LOCAL" != "$PUBLISHED" ]; then
+            npm publish --access public
+            echo "Published v$LOCAL to npm"
+          else
+            echo "Version $LOCAL already published — skipped"
+          fi
 
       - name: Notify Deploy Result
         if: always()
+        continue-on-error: true
         shell: bash
         env:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
