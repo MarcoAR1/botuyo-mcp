@@ -157,5 +157,69 @@ describe('BotuyoApiClient', () => {
         expect((err as ApiError).status).toBe(502)
       }
     })
+
+    it('detects an HTML proxy/firewall block and throws a clear error', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        status: 200,
+        ok: true,
+        text: async () => '<!DOCTYPE html><html><body>Access blocked by network proxy</body></html>'
+      }))
+
+      await expect(client.get('/api/v1/mcp/agents')).rejects.toThrow(/proxy|firewall/i)
+    })
+  })
+
+  // ── retry / backoff ─────────────────────────────────────────────────
+
+  describe('retry / backoff', () => {
+    function client0() {
+      return new BotuyoApiClient({ apiUrl: 'http://localhost:8080', token: 't', retry: { retries: 2, baseDelayMs: 0 } })
+    }
+
+    it('retries on a 5xx then succeeds', async () => {
+      const fn = vi.fn()
+        .mockResolvedValueOnce({ status: 503, ok: false, text: async () => JSON.stringify({ error: 'down' }) })
+        .mockResolvedValueOnce({ status: 200, ok: true, text: async () => JSON.stringify({ success: true, data: 1 }) })
+      vi.stubGlobal('fetch', fn)
+
+      const res = await client0().get('/api/v1/mcp/agents')
+      expect(res.success).toBe(true)
+      expect(fn).toHaveBeenCalledTimes(2)
+    })
+
+    it('gives up after exhausting retries on persistent 5xx', async () => {
+      const fn = vi.fn().mockResolvedValue({ status: 503, ok: false, text: async () => JSON.stringify({ error: 'down' }) })
+      vi.stubGlobal('fetch', fn)
+
+      await expect(client0().get('/api/v1/mcp/agents')).rejects.toMatchObject({ status: 503 })
+      expect(fn).toHaveBeenCalledTimes(3) // 1 + 2 retries
+    })
+
+    it('does NOT retry on 4xx', async () => {
+      const fn = vi.fn().mockResolvedValue({ status: 400, ok: false, text: async () => JSON.stringify({ error: 'bad' }) })
+      vi.stubGlobal('fetch', fn)
+
+      await expect(client0().get('/api/v1/mcp/agents')).rejects.toMatchObject({ status: 400 })
+      expect(fn).toHaveBeenCalledTimes(1)
+    })
+
+    it('retries on a thrown network error then succeeds', async () => {
+      const fn = vi.fn()
+        .mockRejectedValueOnce(new Error('ECONNRESET'))
+        .mockResolvedValueOnce({ status: 200, ok: true, text: async () => JSON.stringify({ success: true }) })
+      vi.stubGlobal('fetch', fn)
+
+      const res = await client0().get('/api/v1/mcp/agents')
+      expect(res.success).toBe(true)
+      expect(fn).toHaveBeenCalledTimes(2)
+    })
+
+    it('throws an ApiError after a persistent network error', async () => {
+      const fn = vi.fn().mockRejectedValue(new Error('ENOTFOUND'))
+      vi.stubGlobal('fetch', fn)
+
+      await expect(client0().get('/api/v1/mcp/agents')).rejects.toBeInstanceOf(ApiError)
+      expect(fn).toHaveBeenCalledTimes(3)
+    })
   })
 })

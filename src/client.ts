@@ -18,6 +18,8 @@ export class ApiError extends Error {
 export interface BotuyoClientConfig {
   apiUrl: string
   token: string
+  /** Optional retry/backoff tuning for transient failures (network errors + 5xx). Defaults: 2 retries, 300ms base. */
+  retry?: { retries?: number; baseDelayMs?: number }
 }
 
 export interface AuthInfo {
@@ -76,7 +78,7 @@ export class BotuyoApiClient {
 
   /** Make an authenticated GET request */
   async get<T = any>(path: string): Promise<T> {
-    const res = await fetch(`${this.config.apiUrl}${path}`, {
+    const res = await this.fetchWithRetry(`${this.config.apiUrl}${path}`, {
       headers: { Authorization: `Bearer ${this.config.token}` }
     })
     return this.handleResponse(res)
@@ -84,7 +86,7 @@ export class BotuyoApiClient {
 
   /** Make an authenticated POST request */
   async post<T = any>(path: string, data: unknown): Promise<T> {
-    const res = await fetch(`${this.config.apiUrl}${path}`, {
+    const res = await this.fetchWithRetry(`${this.config.apiUrl}${path}`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.config.token}`,
@@ -97,7 +99,7 @@ export class BotuyoApiClient {
 
   /** Make an authenticated PUT request */
   async put<T = any>(path: string, data: unknown): Promise<T> {
-    const res = await fetch(`${this.config.apiUrl}${path}`, {
+    const res = await this.fetchWithRetry(`${this.config.apiUrl}${path}`, {
       method: 'PUT',
       headers: {
         Authorization: `Bearer ${this.config.token}`,
@@ -110,7 +112,7 @@ export class BotuyoApiClient {
 
   /** Make an authenticated DELETE request */
   async delete<T = any>(path: string): Promise<T> {
-    const res = await fetch(`${this.config.apiUrl}${path}`, {
+    const res = await this.fetchWithRetry(`${this.config.apiUrl}${path}`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${this.config.token}`
@@ -119,12 +121,53 @@ export class BotuyoApiClient {
     return this.handleResponse(res)
   }
 
+  private async sleep(ms: number): Promise<void> {
+    if (ms > 0) await new Promise((resolve) => setTimeout(resolve, ms))
+  }
+
+  /**
+   * fetch wrapper with bounded exponential backoff.
+   * Retries on thrown network errors and 5xx responses; never retries 4xx.
+   */
+  private async fetchWithRetry(url: string, init?: RequestInit): Promise<Response> {
+    const retries = this.config.retry?.retries ?? 2
+    const baseDelayMs = this.config.retry?.baseDelayMs ?? 300
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const res = await fetch(url, init)
+        if (res.status >= 500 && attempt < retries) {
+          await this.sleep(baseDelayMs * 2 ** attempt)
+          continue
+        }
+        return res
+      } catch (error: unknown) {
+        if (attempt < retries) {
+          await this.sleep(baseDelayMs * 2 ** attempt)
+          continue
+        }
+        const detail = error instanceof Error ? error.message : String(error)
+        throw new ApiError(`Network error after ${retries + 1} attempt(s): ${detail}`, 0)
+      }
+    }
+  }
+
+  /** Heuristic: the body is an HTML document (e.g. a proxy/firewall block page), not an API response. */
+  private looksLikeHtml(text: string): boolean {
+    return /^\s*<(?:!doctype\s+html|html|head|body)\b/i.test(text)
+  }
+
   private async handleResponse(res: Response): Promise<any> {
     const text = await res.text()
     let json: any
     try {
       json = JSON.parse(text)
     } catch {
+      if (this.looksLikeHtml(text)) {
+        throw new ApiError(
+          `Request blocked or returned non-JSON (possible network proxy/firewall). HTTP ${res.status}: ${text.slice(0, 120)}`,
+          res.status
+        )
+      }
       throw new ApiError(`HTTP ${res.status}: ${text.slice(0, 200)}`, res.status)
     }
 
