@@ -23,7 +23,8 @@ import {
   saveCredentials,
   resolveToken,
   resolveApiUrl,
-  checkExistingSession
+  checkExistingSession,
+  resolveTenantName
 } from '../credentials.js'
 
 const CREDS_PATH = join(homedir(), '.botuyo', 'credentials.json')
@@ -227,5 +228,61 @@ describe('credentials', () => {
       const token = await resolveToken()
       expect(token).toBeNull()
     })
+  })
+})
+
+// ── resolveTenantName ──────────────────────────────────────────────────
+
+describe('resolveTenantName', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('calls GET /api/tenant/:id (singular, under /api so it passes the corporate proxy)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, data: { name: 'Acme Corp' } })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    await resolveTenantName('http://x', 'tok', 'id1', 1, 0)
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://x/api/tenant/id1',
+      expect.objectContaining({ headers: { Authorization: 'Bearer tok' } })
+    )
+  })
+
+  it('reads the name from a wrapped { success, data: { name } } response', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, data: { name: 'Acme Corp' } })
+    }))
+    const name = await resolveTenantName('http://x', 'tok', 'id1', 1, 0)
+    expect(name).toBe('Acme Corp')
+  })
+
+  it('reads the name from a top-level { tenantId, name } response (unwrapped)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ tenantId: 'id1', name: 'Top Level Name' })
+    }))
+    const name = await resolveTenantName('http://x', 'tok', 'id1', 1, 0)
+    expect(name).toBe('Top Level Name')
+  })
+
+  it('retries on a failed attempt and then succeeds', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: { name: 'Recovered' } }) })
+    vi.stubGlobal('fetch', fetchMock)
+    const name = await resolveTenantName('http://x', 'tok', 'id1', 3, 0)
+    expect(name).toBe('Recovered')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('falls back to the tenantId after all attempts fail', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('blocked by proxy')))
+    const name = await resolveTenantName('http://x', 'tok', 'tenant-xyz', 2, 0)
+    expect(name).toBe('tenant-xyz')
   })
 })

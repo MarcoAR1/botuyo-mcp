@@ -1,5 +1,6 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js'
 import type { BotuyoApiClient } from '../client.js'
+import { voiceProfileHelp } from '../format.js'
 
 export const UPDATE_AGENT_TOOL: Tool = {
   name: 'update_agent',
@@ -72,7 +73,7 @@ avatar3dUrl, cssVariables (object), darkCssVariables (object), animations (objec
         type: 'object',
         description: 'Voice configuration (deep-merged). liveModel is admin-only and preserved automatically.',
         properties: {
-          profile: { type: 'string', description: 'Voice profile name or ID. Valid: "Profesional Femenina" (kore), "Amigable Femenina" (aoede), "Serena Femenina" (leda), "Energético Masculino" (puck), "Formal Masculino" (charon), "Cálido Masculino" (fenrir)' },
+          profile: { type: 'string', description: `Voice profile name or ID. Valid: ${voiceProfileHelp()}` },
           widgetCallEnabled: { type: 'boolean', description: 'Whether voice calls are enabled in the widget' }
         }
       },

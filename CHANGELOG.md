@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.23] — 2026-06-17
+### Added
+- Dependency on the shared `@botuyo/contracts` package.
+
+### Changed
+- CLI commands + MCP tools now source `DEFAULT_API_BASE_URL` and the `VOICE_PROFILES` catalog from `@botuyo/contracts`, so they never drift from the platform's actual config/voices.
+- New shared display helpers in `src/format.ts` (`shortId`, `voiceProfileHelp`) reused across `commands/` and `tools/`.
+
 ## [0.3.22] — 2026-06-17
 ### Changed
 - `BotuyoApiClient`: requests now retry transient failures (network / 5xx) with exponential backoff + jitter, and detect HTML proxy-block responses (e.g. Netskope) — surfacing a clear error instead of crashing on JSON parse.

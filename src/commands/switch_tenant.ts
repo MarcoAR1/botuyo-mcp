@@ -10,6 +10,7 @@
 
 import * as readline from 'readline'
 import { readCredentials, saveCredentials, resolveToken, resolveApiUrl, fetchUserInfo, resolveTenantName } from './credentials.js'
+import { shortId } from '../format.js'
 
 export async function runSwitchTenant(): Promise<void> {
   console.log('\n🔄 BotUyo MCP — Switch Tenant\n')
@@ -63,7 +64,8 @@ export async function runSwitchTenant(): Promise<void> {
 
   for (const t of tenantInfos) {
     const marker = t.isActive ? ' ← actual' : ''
-    console.log(`   ${t.index}. ${t.name} (${t.role})${marker}`)
+    const label = t.name !== t.id ? `${t.name} (${shortId(t.id)})` : shortId(t.id)
+    console.log(`   ${t.index}. ${label} (${t.role})${marker}`)
   }
 
   const choice = await prompt('\n¿A qué tenant querés cambiar? (número): ')
@@ -113,8 +115,12 @@ export async function runSwitchTenant(): Promise<void> {
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
   })
 
+  const switchedLabel = tenantName !== selectedTenantId
+    ? `${tenantName} (${shortId(selectedTenantId)})`
+    : shortId(selectedTenantId)
+
   console.log(`\n✅ Cambiado exitosamente`)
-  console.log(`   Tenant:  ${tenantName}`)
+  console.log(`   Tenant:  ${switchedLabel}`)
   console.log(`   Role:    ${newRole}\n`)
 }
 

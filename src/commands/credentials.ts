@@ -6,6 +6,7 @@
 import { readFile, writeFile, mkdir, unlink } from 'fs/promises'
 import { join } from 'path'
 import { homedir } from 'os'
+import { DEFAULT_API_BASE_URL } from '@botuyo/contracts'
 
 const CONFIG_DIR = join(homedir(), '.botuyo')
 const CREDENTIALS_FILE = join(CONFIG_DIR, 'credentials.json')
@@ -80,7 +81,7 @@ export async function isTokenExpired(): Promise<boolean> {
  * 2. apiUrl from ~/.botuyo/credentials.json
  * 3. Default: https://api.botuyo.com
  */
-export const DEFAULT_API_URL = 'https://api.botuyo.com'
+export const DEFAULT_API_URL = DEFAULT_API_BASE_URL
 
 export async function resolveApiUrl(): Promise<string> {
   if (process.env.BOTUYO_API_URL) return process.env.BOTUYO_API_URL
@@ -166,17 +167,42 @@ export async function fetchUserInfo(apiUrl: string, token: string): Promise<User
 }
 
 /**
- * Resolve a tenant's display name via GET /api/tenants/:id.
- * Returns the name or the tenantId as fallback (never throws).
+ * Resolve a tenant's display name via GET /api/tenant/:id.
+ *
+ * Uses the `/api`-prefixed `TenantManagementController.getTenantInfo` endpoint
+ * (jwt-secured, built "para switcher"), which returns `{ data: { name } }`.
+ * The `/api` prefix matches the rest of the backend and lets the request pass
+ * corporate proxies that block non-`/api` paths. We still check
+ * a couple of response shapes defensively and retry on transient failures.
+ * Returns the tenantId as a last-resort fallback and never throws.
  */
-export async function resolveTenantName(apiUrl: string, token: string, tenantId: string): Promise<string> {
-  try {
-    const res = await fetch(`${apiUrl}/api/tenants/${tenantId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    const data = (await res.json()) as any
-    return data.data?.name || data.data?.tenant?.name || tenantId
-  } catch {
-    return tenantId
+export async function resolveTenantName(
+  apiUrl: string,
+  token: string,
+  tenantId: string,
+  attempts = 3,
+  delayMs = 300
+): Promise<string> {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(`${apiUrl}/api/tenant/${tenantId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.ok) {
+        const data = (await res.json()) as any
+        const name =
+          data?.data?.name ||
+          data?.data?.tenant?.name ||
+          data?.name ||
+          data?.tenant?.name
+        if (name) return name
+      }
+    } catch {
+      // network/parse error (e.g. corporate proxy block) — retry
+    }
+    if (i < attempts - 1 && delayMs > 0) {
+      await new Promise(resolve => setTimeout(resolve, delayMs))
+    }
   }
+  return tenantId
 }

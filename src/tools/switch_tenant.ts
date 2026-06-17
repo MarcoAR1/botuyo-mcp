@@ -1,6 +1,7 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js'
 import type { BotuyoApiClient } from '../client.js'
 import { readCredentials, saveCredentials } from '../commands/credentials.js'
+import { DEFAULT_API_BASE_URL } from '@botuyo/contracts'
 
 export const SWITCH_TENANT_TOOL: Tool = {
   name: 'switch_tenant',
@@ -21,7 +22,7 @@ export const SWITCH_TENANT_TOOL: Tool = {
   }
 }
 
-const API_URL = process.env.BOTUYO_API_URL || 'https://api.botuyo.com'
+const API_URL = process.env.BOTUYO_API_URL || DEFAULT_API_BASE_URL
 
 /**
  * Resolve tenant name from API response.

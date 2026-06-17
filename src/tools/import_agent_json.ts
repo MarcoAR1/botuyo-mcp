@@ -2,6 +2,7 @@ import type { Tool } from '@modelcontextprotocol/sdk/types.js'
 import type { BotuyoApiClient } from '../client.js'
 import { readFileSync, existsSync } from 'fs'
 import { resolve } from 'path'
+import { voiceProfileHelp } from '../format.js'
 
 export const IMPORT_AGENT_JSON_TOOL: Tool = {
   name: 'import_agent_json',
@@ -115,7 +116,7 @@ Requires role: owner, admin, or developer.`,
             type: 'object',
             description: 'Voice config. liveModel is admin-only and preserved.',
             properties: {
-              profile: { type: 'string', description: 'Voice profile. Accepts display name, ID, or legacy Gemini name. Valid: "Profesional Femenina" (kore), "Amigable Femenina" (aoede), "Serena Femenina" (leda), "Energético Masculino" (puck), "Formal Masculino" (charon), "Cálido Masculino" (fenrir), "Neutro Profesional" (orus), "Suave Neutral" (zephyr).' },
+              profile: { type: 'string', description: `Voice profile. Accepts display name, ID, or legacy Gemini name. Valid: ${voiceProfileHelp()}.` },
               widgetCallEnabled: { type: 'boolean', description: 'Whether voice calls are enabled in the widget' }
             }
           },

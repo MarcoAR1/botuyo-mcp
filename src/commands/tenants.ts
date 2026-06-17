@@ -8,6 +8,7 @@
  */
 
 import { readCredentials, resolveToken, resolveApiUrl, fetchUserInfo, resolveTenantName } from './credentials.js'
+import { shortId } from '../format.js'
 
 export async function runTenants(): Promise<void> {
   console.log('\n📋 BotUyo MCP — Mis Tenants\n')
@@ -39,8 +40,8 @@ export async function runTenants(): Promise<void> {
 
   console.log(`Email: ${creds.email}`)
   console.log(`Tenants: ${tenantIds.length}\n`)
-  console.log('  #   Nombre                              Rol        Estado')
-  console.log('  ─   ─────────────────────────────────   ─────────  ──────')
+  console.log('  #   Tenant                                          Rol        Estado')
+  console.log('  ─   ─────────────────────────────────────────────   ─────────  ──────')
 
   for (let i = 0; i < tenantIds.length; i++) {
     const tid = tenantIds[i]
@@ -50,8 +51,9 @@ export async function runTenants(): Promise<void> {
     if (name === tid) {
       name = await resolveTenantName(API_URL, token, tid)
     }
+    const label = name !== tid ? `${name} (${shortId(tid)})` : shortId(tid)
     const status = isActive ? '✓ activo' : ''
-    console.log(`  ${i + 1}   ${name.padEnd(37)} ${role.padEnd(10)} ${status}`)
+    console.log(`  ${i + 1}   ${label.padEnd(47)} ${role.padEnd(10)} ${status}`)
   }
 
   console.log(`\nPara cambiar de tenant: npx @botuyo/mcp switch-tenant\n`)

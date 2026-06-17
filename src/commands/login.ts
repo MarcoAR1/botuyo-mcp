@@ -15,6 +15,7 @@
 
 import * as readline from 'readline'
 import { saveCredentials, checkExistingSession, resolveApiUrl, BotuyoCredentials, fetchUserInfo, resolveTenantName } from './credentials.js'
+import { shortId } from '../format.js'
 
 export async function runLogin(args: string[]): Promise<void> {
   console.log('\n🤖 BotUyo MCP — Login\n')
@@ -103,7 +104,8 @@ export async function runLogin(args: string[]): Promise<void> {
 
     for (const t of tenantInfos) {
       const marker = t.isActive ? ' ← actual' : ''
-      console.log(`   ${t.index}. ${t.name} (${t.role})${marker}`)
+      const label = t.name !== t.id ? `${t.name} (${shortId(t.id)})` : shortId(t.id)
+      console.log(`   ${t.index}. ${label} (${t.role})${marker}`)
     }
 
     const choice = await prompt('\n¿Qué tenant querés usar? (número, Enter para el actual): ')
@@ -156,9 +158,13 @@ export async function runLogin(args: string[]): Promise<void> {
 
   await saveCredentials(creds)
 
+  const tenantLabel = creds.tenantName !== creds.tenantId
+    ? `${creds.tenantName} (${shortId(creds.tenantId)})`
+    : shortId(creds.tenantId)
+
   console.log(`\n✅ ¡Autenticado exitosamente!`)
   console.log(`   Email:   ${creds.email}`)
-  console.log(`   Tenant:  ${creds.tenantName}`)
+  console.log(`   Tenant:  ${tenantLabel}`)
   console.log(`   Role:    ${creds.role}`)
   console.log(`   Expira:  ${new Date(creds.expiresAt).toLocaleDateString()}`)
   console.log(`\n🚀 Ya podés usar el servidor MCP de BotUyo.\n`)
