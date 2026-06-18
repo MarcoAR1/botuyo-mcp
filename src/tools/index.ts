@@ -36,6 +36,30 @@ import { LIST_AVATARS_TOOL, listAvatarsHandler, SELECT_AVATAR_TOOL, selectAvatar
 import { UPLOAD_AGENT_MEDIA_TOOL, uploadAgentMediaHandler } from './upload_agent_media.js'
 import { LIST_AGENT_VERSIONS_TOOL, listAgentVersionsHandler } from './list_agent_versions.js'
 import { RESTORE_AGENT_VERSION_TOOL, restoreAgentVersionHandler } from './restore_agent_version.js'
+import {
+  LIST_AGENT_FAMILIES_TOOL,
+  listAgentFamiliesHandler,
+  GET_AGENT_FAMILY_TOOL,
+  getAgentFamilyHandler,
+  CREATE_AGENT_FAMILY_TOOL,
+  createAgentFamilyHandler,
+  UPDATE_FAMILY_BASE_TOOL,
+  updateFamilyBaseHandler,
+  ADD_FAMILY_VARIANT_TOOL,
+  addFamilyVariantHandler,
+  UPDATE_FAMILY_VARIANT_TOOL,
+  updateFamilyVariantHandler,
+  REMOVE_FAMILY_VARIANT_TOOL,
+  removeFamilyVariantHandler,
+  PUBLISH_AGENT_FAMILY_TOOL,
+  publishAgentFamilyHandler,
+  DELETE_AGENT_FAMILY_TOOL,
+  deleteAgentFamilyHandler,
+  EXPORT_AGENT_FAMILY_TOOL,
+  exportAgentFamilyHandler,
+  IMPORT_AGENT_FAMILY_TOOL,
+  importAgentFamilyHandler
+} from './agent_families.js'
 export const ALL_TOOLS: Tool[] = [
   LIST_AGENTS_TOOL,
   GET_AGENT_TOOL,
@@ -67,6 +91,17 @@ export const ALL_TOOLS: Tool[] = [
   UPLOAD_AGENT_MEDIA_TOOL,
   LIST_AGENT_VERSIONS_TOOL,
   RESTORE_AGENT_VERSION_TOOL,
+  LIST_AGENT_FAMILIES_TOOL,
+  GET_AGENT_FAMILY_TOOL,
+  CREATE_AGENT_FAMILY_TOOL,
+  UPDATE_FAMILY_BASE_TOOL,
+  ADD_FAMILY_VARIANT_TOOL,
+  UPDATE_FAMILY_VARIANT_TOOL,
+  REMOVE_FAMILY_VARIANT_TOOL,
+  PUBLISH_AGENT_FAMILY_TOOL,
+  DELETE_AGENT_FAMILY_TOOL,
+  EXPORT_AGENT_FAMILY_TOOL,
+  IMPORT_AGENT_FAMILY_TOOL,
 ]
 
 export type ToolHandler = (client: BotuyoApiClient, args: Record<string, unknown>) => Promise<unknown>
@@ -102,4 +137,15 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
   upload_agent_media: uploadAgentMediaHandler,
   list_agent_versions: listAgentVersionsHandler,
   restore_agent_version: restoreAgentVersionHandler,
+  list_agent_families: listAgentFamiliesHandler,
+  get_agent_family: getAgentFamilyHandler,
+  create_agent_family: createAgentFamilyHandler,
+  update_family_base: updateFamilyBaseHandler,
+  add_family_variant: addFamilyVariantHandler,
+  update_family_variant: updateFamilyVariantHandler,
+  remove_family_variant: removeFamilyVariantHandler,
+  publish_agent_family: publishAgentFamilyHandler,
+  delete_agent_family: deleteAgentFamilyHandler,
+  export_agent_family: exportAgentFamilyHandler,
+  import_agent_family: importAgentFamilyHandler,
 }

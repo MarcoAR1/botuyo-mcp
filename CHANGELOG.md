@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-06-18
+### Added
+- **Agent Family tools (11):** manage "one logical agent with many variants" (shared `base` config + per-variant `overrides`) via the MCP namespace `/api/v1/mcp/agent-families`:
+  - `list_agent_families`, `get_agent_family`, `create_agent_family`, `update_family_base`, `add_family_variant`, `update_family_variant`, `remove_family_variant`, `publish_agent_family`, `delete_agent_family` (name-confirmation safety), `export_agent_family` (auto-saves a portable JSON to `./agent-families/{slug}.json`), `import_agent_family` (full replace from file or inline; reads `_familyId` from exported files).
+  - Write tools require role owner/admin/developer and are subject to the per-plan `maxVariantsPerFamily` limit (both enforced server-side). All defined in `src/tools/agent_families.ts` and registered in `src/tools/index.ts`.
+
 ## [0.3.23] — 2026-06-17
 ### Added
 - Dependency on the shared `@botuyo/contracts` package.
