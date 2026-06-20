@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > dated version section when you bump + publish.
 
 ## [Unreleased]
+
+## [0.4.1] — 2026-06-19
 ### Changed
 - **Ms. Ellis documented as an AgentFamily (variants):** rewrote `agents/README_ms_ellis.md` to reflect the live production setup — an AgentFamily (familyId `6a344975524b9e2d93406f40`, slug `ms-ellis`, entry `nivelador`, 7 variants routed via `switch_variant`) in tenant `69cfa71f02a3b484fd9cecbc` — and added `agent-families/ms-ellis.json` as the canonical source of truth (re-importable with `import_agent_family`).
 - The per-agent seeds `agents/ms_ellis_*.json` are now **legacy** (`transfer_to_department` model). They are kept only for the `scripts/migrate_ms_ellis_family.mjs` name-discovery step; re-importing them with `import_agent_json` reverts the family and breaks the variants. Edit the family via `export_agent_family` → edit `agent-families/ms-ellis.json` → `import_agent_family` → `publish_agent_family`.
