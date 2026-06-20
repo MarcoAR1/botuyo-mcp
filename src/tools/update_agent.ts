@@ -80,6 +80,10 @@ avatar3dUrl, cssVariables (object), darkCssVariables (object), animations (objec
       channelPrompts: {
         type: 'object',
         description: 'Per-channel system prompt overrides. Key = channel name, value = prompt text. Example: { "whatsapp": "Sé concisa, mensajes cortos" }'
+      },
+      requiresUserIdentity: {
+        type: 'boolean',
+        description: 'SECURITY: whether this agent requires a per-user identity. When true, the agent is rejected on the anonymous web widget channel (no per-user identity there) and only runs on identity-bearing channels like Telegram. Default false. Enable it for personal-assistant-style agents that read/write per-user data.'
       }
     },
     required: ['agentId']

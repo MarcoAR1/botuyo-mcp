@@ -174,6 +174,11 @@ export async function exampleAgentHandler() {
       'Runtime filters tools by channel compatibility — text-only tools (e.g. create_pre_reservation) won\'t load on phone. ' +
       'You can have phone + text-only tools as long as your channelFlows.phone never reaches stages with those tools.',
 
+    requiresUserIdentity: false,
+    _requiresUserIdentity_doc: 'Optional. Boolean (default false). SECURITY flag: when true, the agent requires a per-user identity ' +
+      'and is rejected on the anonymous web widget channel — it only runs on identity-bearing channels like Telegram. ' +
+      'Enable it for personal-assistant-style agents that read/write per-user data (Gmail, Calendar, tasks, etc.).',
+
     // ─── TOOL CONFIGURATIONS ────────────────────────────────────────
     toolConfigs: {
       // Single-instance: configure an existing tool with fixed params

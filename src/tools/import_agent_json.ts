@@ -122,7 +122,8 @@ Requires role: owner, admin, or developer.`,
           },
           channelPrompts: { type: 'object', description: 'Per-channel system prompt overrides: { channelName: "prompt text" }' },
           knowledgeDocumentIds: { type: 'array', items: { type: 'string' }, description: 'Knowledge base document IDs for RAG' },
-          allowedOrigins: { type: 'array', items: { type: 'string' }, description: 'CORS allowed origins for web widget embedding' }
+          allowedOrigins: { type: 'array', items: { type: 'string' }, description: 'CORS allowed origins for web widget embedding' },
+          requiresUserIdentity: { type: 'boolean', description: 'SECURITY: when true, the agent is blocked on the anonymous web widget channel and only runs on identity-bearing channels (e.g. Telegram). Default false.' }
         },
         required: ['name', 'identity']
       }

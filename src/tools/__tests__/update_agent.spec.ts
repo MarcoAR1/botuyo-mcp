@@ -24,4 +24,12 @@ describe('updateAgentHandler', () => {
   it('should require agentId', async () => {
     await expect(updateAgentHandler({} as any, {})).rejects.toThrow()
   })
+
+  it('forwards requiresUserIdentity in the update payload', async () => {
+    const client = new MockClient() as any
+    await updateAgentHandler(client, { agentId: 'a1', requiresUserIdentity: true })
+
+    expect(client.methodCalls[0].path).toBe('/api/v1/mcp/agents/a1')
+    expect(client.methodCalls[0].payload.requiresUserIdentity).toBe(true)
+  })
 })

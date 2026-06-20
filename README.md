@@ -74,7 +74,7 @@ The server resolves your JWT from `BOTUYO_TOKEN`, falling back to `~/.botuyo/cre
 
 ## Available tools
 
-The server exposes **30 tools**. Read tools (`list_*`, `get_*`, `export_*`) need `viewer+`; write/publish tools need `developer+` (see [Roles](#roles)).
+The server exposes **41 tools**. Read tools (`list_*`, `get_*`, `export_*`) need `viewer+`; write/publish tools need `developer+` (see [Roles](#roles)).
 
 ### Agents
 
@@ -88,6 +88,24 @@ The server exposes **30 tools**. Read tools (`list_*`, `get_*`, `export_*`) need
 | `delete_agent` | Soft-delete an agent (irreversible; requires explicit confirmation) |
 | `publish_agent` | Publish or unpublish an agent (live vs draft) |
 | `example_agent` | Return a fully documented example agent config (read-only reference) |
+
+### Agent families
+
+A **family** is one logical agent with a shared `base` config plus multiple `variants` (each variant stores only its overrides and is materialized into a real agent) — ideal for a single assistant offered in several levels or flavors.
+
+| Tool | Description |
+|---|---|
+| `list_agent_families` | List agent families in the tenant |
+| `get_agent_family` | Get a family's shared base + all its variants |
+| `create_agent_family` | Create a family with a shared base and an initial set of variants |
+| `update_family_base` | Replace the shared base (re-materializes every variant) |
+| `add_family_variant` | Add a new variant (materialized into a draft agent) |
+| `update_family_variant` | Update a variant's label / overrides / handoff targets / order |
+| `remove_family_variant` | Remove a variant (cannot remove the entry variant) |
+| `publish_agent_family` | Publish the family and all its member agents |
+| `delete_agent_family` | Delete a family and all its agents (irreversible; requires confirmation) |
+| `export_agent_family` | Export a portable family JSON (base + variants) to a local file |
+| `import_agent_family` | Replace a family's base + variants from JSON (full replace) |
 
 ### Conversation flow
 

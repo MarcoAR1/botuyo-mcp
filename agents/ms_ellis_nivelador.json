@@ -11,7 +11,7 @@
       "id": "welcome",
       "name": "Bienvenida y Objetivo",
       "type": "start",
-      "instruction": "Saludá cálidamente como Ms. Ellis y preguntá su NOMBRE, su EDAD y 2-3 intereses/características (profesión, hobbies, de dónde es). Guardá esos datos con save_user_memory (student_name, student_age, interests) y, apenas tengas el nombre, llamá update_student_dashboard (studentName, studentAge, interests + un level estimado) para armar su FICHA en el panel. Después preguntá para qué quiere aprender inglés (trabajo, viajes, exámenes, estudios, negocios, hobby) y guardá la respuesta con save_user_memory (learning_goal). Preguntá también qué nivel cree tener (o 'no sé'). Mantené todo breve, cálido y motivador.",
+      "instruction": "Arrancá SIEMPRE desde cero salvo que la memoria ya tenga datos. Si [USER MEMORY] ya trae student_name/learning_goal/english_level, NO re-preguntes: saludá por su nombre, confirmá brevemente y pasá a evaluar. Si NO hay datos (alumno nuevo), saludá cálidamente como Ms. Ellis y preguntá su NOMBRE, su EDAD y 2-3 intereses/características (profesión, hobbies, de dónde es); guardalos con save_user_memory (student_name, student_age, interests) y, apenas tengas el nombre, llamá update_student_dashboard (studentName, studentAge, interests + un level estimado, SIN topics_covered para que el roadmap arranque vacío) para armar su FICHA en el panel. Después preguntá para qué quiere aprender inglés (trabajo, viajes, exámenes, estudios, negocios, hobby) y guardá la respuesta con save_user_memory (learning_goal). Preguntá también qué nivel cree tener (o 'no sé'), usándolo solo como punto de partida. Mantené todo breve, cálido y motivador.",
       "tools": [
         "save_user_memory",
         "update_student_dashboard"
