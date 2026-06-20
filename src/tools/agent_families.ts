@@ -11,8 +11,8 @@
 
 import type { Tool } from '@modelcontextprotocol/sdk/types.js'
 import type { BotuyoApiClient } from '../client.js'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
-import { join, resolve } from 'path'
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs'
+import { basename, dirname, join, resolve } from 'path'
 
 const BASE = '/api/v1/mcp/agent-families'
 
@@ -239,14 +239,14 @@ export async function deleteAgentFamilyHandler(client: BotuyoApiClient, args: Re
 export const EXPORT_AGENT_FAMILY_TOOL: Tool = {
   name: 'export_agent_family',
   description:
-    'Export a portable family JSON (name, slug, entryVariantKey, base, variants — internal fields stripped), ' +
-    'ready to edit and re-import. Auto-saves to ./agent-families/{slug}.json (override with savePath). ' +
-    'Use import_agent_family to apply edits (full replace).',
+    'Export a family to a readable FOLDER: {savePath}/{slug}/family.json (name, slug, entryVariantKey, ' +
+    'base + metadata) plus one variants/{key}.json per variant. Default savePath ./agent-families. ' +
+    'Edit the files and re-import with import_agent_family (point it at the folder).',
   inputSchema: {
     type: 'object',
     properties: {
       familyId: { type: 'string', description: 'The agent family id.' },
-      savePath: { type: 'string', description: 'Optional directory for the saved JSON. Default: ./agent-families/' }
+      savePath: { type: 'string', description: 'Optional parent directory for the saved family folder. Default: ./agent-families/' }
     },
     required: ['familyId']
   }
@@ -257,7 +257,7 @@ export async function exportAgentFamilyHandler(client: BotuyoApiClient, args: Re
 
   const result = (await client.get(`${BASE}/${familyId}/export`)) as {
     success?: boolean
-    data?: { familyId?: string; family?: { slug?: string } }
+    data?: { familyId?: string; family?: Record<string, unknown> & { slug?: string; variants?: Array<Record<string, unknown>> } }
     message?: string
     savedTo?: string
     fileSaveError?: string
@@ -266,20 +266,27 @@ export async function exportAgentFamilyHandler(client: BotuyoApiClient, args: Re
   if (result?.success && result?.data?.family) {
     try {
       const family = result.data.family
-      const sanitized = (family.slug || familyId)
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '_')
-        .toLowerCase()
-        .substring(0, 50)
-      const dir = resolve(savePath)
-      mkdirSync(dir, { recursive: true })
-      const filePath = join(dir, `${sanitized}.json`)
-      const payload = { _exportedAt: new Date().toISOString(), _familyId: result.data.familyId, ...family }
-      writeFileSync(filePath, JSON.stringify(payload, null, 2), 'utf-8')
-      result.savedTo = filePath
-      result.message = `${result.message || ''} File saved to: ${filePath}`
+      const slug = sanitizeName(family.slug || familyId)
+      const famDir = join(resolve(savePath), slug)
+      const variantsDir = join(famDir, 'variants')
+      mkdirSync(variantsDir, { recursive: true })
+
+      const variants = Array.isArray(family.variants) ? family.variants : []
+      const { variants: _variants, ...familyMeta } = family
+      void _variants
+      // family.json: metadata + base, WITHOUT the (huge) variants array
+      const familyJson = { _exportedAt: new Date().toISOString(), _familyId: result.data.familyId, ...familyMeta }
+      writeFileSync(join(famDir, 'family.json'), JSON.stringify(familyJson, null, 2), 'utf-8')
+      // one file per variant — small, readable, clean diffs
+      for (const variant of variants) {
+        const key = sanitizeName(String((variant as { key?: unknown }).key ?? 'variant'))
+        writeFileSync(join(variantsDir, `${key}.json`), JSON.stringify(variant, null, 2), 'utf-8')
+      }
+
+      result.savedTo = famDir
+      result.message = `${result.message || ''} Saved family.json + ${variants.length} variant file(s) to: ${famDir}`
     } catch (err: unknown) {
-      result.fileSaveError = `Could not save file: ${err instanceof Error ? err.message : String(err)}`
+      result.fileSaveError = `Could not save folder: ${err instanceof Error ? err.message : String(err)}`
     }
   }
 
@@ -290,11 +297,12 @@ export async function exportAgentFamilyHandler(client: BotuyoApiClient, args: Re
 export const IMPORT_AGENT_FAMILY_TOOL: Tool = {
   name: 'import_agent_family',
   description:
-    'Import/replace a family\'s base + variant set from a local JSON file or an inline object (FULL REPLACE).\n\n' +
+    'Import/replace a family\'s base + variant set from a local FOLDER, a single JSON file, or an inline object (FULL REPLACE).\n\n' +
     'Reconciles members: surviving variant keys keep their materialized agent, new keys are created, ' +
     'dropped keys are soft-deleted. Subject to the per-plan maxVariantsPerFamily limit.\n\n' +
-    'Provide the family via `filePath` (preferred — a file from export_agent_family) or inline `family`. ' +
-    'If both are given, filePath wins. Requires role: owner, admin, or developer.',
+    'Provide the family via `filePath` (preferred — a folder from export_agent_family: family.json + variants/*.json; ' +
+    'a single legacy .json also works) or inline `family`. If both are given, filePath wins. ' +
+    'Requires role: owner, admin, or developer.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -302,7 +310,7 @@ export const IMPORT_AGENT_FAMILY_TOOL: Tool = {
         type: 'string',
         description: 'The family id to overwrite. If omitted and the file contains _familyId, that is used.'
       },
-      filePath: { type: 'string', description: 'Path to a local family JSON file (e.g. ./agent-families/ms-ellis.json).' },
+      filePath: { type: 'string', description: 'Path to a family folder (e.g. ./agent-families/ms-ellis), its family.json, or a single .json file.' },
       family: {
         type: 'object',
         description: 'Inline family payload (fallback if filePath is omitted).',
@@ -328,18 +336,18 @@ export async function importAgentFamilyHandler(client: BotuyoApiClient, args: Re
     if (!existsSync(resolvedPath)) {
       return {
         success: false,
-        error: `File not found: ${resolvedPath}`,
-        hint: 'Use export_agent_family first to create a local file, or check the path.'
+        error: `Path not found: ${resolvedPath}`,
+        hint: 'Use export_agent_family first to create a local family folder, or check the path.'
       }
     }
     try {
-      const parsed = JSON.parse(readFileSync(resolvedPath, 'utf-8'))
+      const parsed = readFamilyFromPath(resolvedPath)
       const { _exportedAt, _familyId, ...content } = parsed
       void _exportedAt
-      if (!familyId && _familyId) familyId = _familyId
+      if (!familyId && _familyId) familyId = _familyId as string
       family = content
     } catch (err: unknown) {
-      return { success: false, error: `Failed to read/parse file: ${err instanceof Error ? err.message : String(err)}`, path: resolvedPath }
+      return { success: false, error: `Failed to read/parse: ${err instanceof Error ? err.message : String(err)}`, path: resolvedPath }
     }
   }
 
@@ -355,4 +363,49 @@ export async function importAgentFamilyHandler(client: BotuyoApiClient, args: Re
 
   const result = await client.put(`${BASE}/${familyId}/import`, family)
   return { ...(result as object), importedFrom: filePath ? resolve(filePath) : 'inline' }
+}
+
+// ── helpers ─────────────────────────────────────────────────────────────────
+
+/** Make a slug/variant key safe to use as a file/directory name. */
+function sanitizeName(name: string): string {
+  const cleaned = String(name)
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/^[-.]+|[-.]+$/g, '')
+  return cleaned || 'family'
+}
+
+/**
+ * Read a family payload from a path that may be:
+ *  - a folder (family.json + variants/*.json) → reassembled with a `variants` array,
+ *  - a `family.json` file → its parent folder is reassembled,
+ *  - a single legacy .json file (variants inline) → parsed as-is.
+ */
+function readFamilyFromPath(resolvedPath: string): Record<string, unknown> {
+  const stat = statSync(resolvedPath)
+  if (stat.isDirectory()) return readFamilyFromFolder(resolvedPath)
+  if (basename(resolvedPath).toLowerCase() === 'family.json') return readFamilyFromFolder(dirname(resolvedPath))
+  return JSON.parse(readFileSync(resolvedPath, 'utf-8')) as Record<string, unknown>
+}
+
+/** Reassemble a folder (family.json + variants/*.json) into a single family object. */
+function readFamilyFromFolder(dir: string): Record<string, unknown> {
+  const familyJsonPath = join(dir, 'family.json')
+  if (!existsSync(familyJsonPath)) {
+    throw new Error(`family.json not found in folder: ${dir}`)
+  }
+  const family = JSON.parse(readFileSync(familyJsonPath, 'utf-8')) as Record<string, unknown>
+
+  const variantsDir = join(dir, 'variants')
+  const variants: Array<Record<string, unknown>> = []
+  if (existsSync(variantsDir) && statSync(variantsDir).isDirectory()) {
+    const files = readdirSync(variantsDir)
+      .filter((f) => f.toLowerCase().endsWith('.json'))
+      .sort()
+    for (const file of files) {
+      variants.push(JSON.parse(readFileSync(join(variantsDir, file), 'utf-8')) as Record<string, unknown>)
+    }
+  }
+  return { ...family, variants }
 }

@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-06-20
+### Changed
+- **`export_agent_family` now writes a readable FOLDER instead of one big file:** `{savePath}/{slug}/family.json` (name, slug, entryVariantKey, base + metadata) plus one `variants/{key}.json` per variant. Smaller files, cleaner diffs, easier hand-editing.
+- **`import_agent_family` accepts a folder:** point `filePath` at the exported folder (or its `family.json`) and it reassembles `family.json` + `variants/*.json` into one full-replace payload. Still backward-compatible with a single legacy `.json` file and with inline `family`. Added `src/tools/__tests__/agent_families.spec.ts` coverage for folder export + folder/file/inline import.
+
+### Removed
+- Bundled agent definitions and one-off ops scripts no longer live in this repo — they were moved to a private repository where the agent definitions are managed. Removed the example seeds, backups, the bundled family export, the README and the `scripts/` migration tooling.
+- Added `agents/` and `agent-families/` to `.gitignore` so exported agent data (from `export_agent_family` / `export_agent_json`) stays out of the package repo.
+
 ## [0.4.1] — 2026-06-19
 ### Changed
 - **Ms. Ellis documented as an AgentFamily (variants):** rewrote `agents/README_ms_ellis.md` to reflect the live production setup — an AgentFamily (familyId `6a344975524b9e2d93406f40`, slug `ms-ellis`, entry `nivelador`, 7 variants routed via `switch_variant`) in tenant `69cfa71f02a3b484fd9cecbc` — and added `agent-families/ms-ellis.json` as the canonical source of truth (re-importable with `import_agent_family`).

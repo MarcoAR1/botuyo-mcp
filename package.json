@@ -1,6 +1,6 @@
 {
   "name": "@botuyo/mcp",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "BotUyo MCP Server — create and manage AI agents via Model Context Protocol",
   "keywords": [
     "mcp",

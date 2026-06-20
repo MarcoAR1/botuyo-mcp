@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import {
@@ -175,7 +175,7 @@ describe('agent family tools — publish / delete', () => {
 })
 
 describe('agent family tools — export / import', () => {
-  it('export GETs /export and saves a portable file', async () => {
+  it('export GETs /export and saves a folder (family.json + variants/*.json)', async () => {
     const dir = makeTmpDir()
     const client = new MockClient({
       [`${BASE}/fam1/export`]: {
@@ -186,8 +186,11 @@ describe('agent family tools — export / import', () => {
             name: 'Ms. Ellis',
             slug: 'ms-ellis',
             entryVariantKey: 'nivelador',
-            base: {},
-            variants: [{ key: 'nivelador', label: 'Nivelador', overrides: {} }]
+            base: { identity: { language: 'es' } },
+            variants: [
+              { key: 'nivelador', label: 'Nivelador', overrides: {} },
+              { key: 'a1', label: 'A1', overrides: { identity: { tone: 'x' } } }
+            ]
           }
         }
       }
@@ -195,10 +198,23 @@ describe('agent family tools — export / import', () => {
 
     const res = (await exportAgentFamilyHandler(client, { familyId: 'fam1', savePath: dir })) as any
     expect(client.calls[0]).toEqual({ method: 'get', path: `${BASE}/fam1/export` })
-    expect(res.savedTo).toBe(join(dir, 'ms-ellis.json'))
-    const saved = JSON.parse(readFileSync(res.savedTo, 'utf-8'))
-    expect(saved._familyId).toBe('fam1')
-    expect(saved.entryVariantKey).toBe('nivelador')
+
+    // saves a per-family FOLDER (named after the slug), not a single giant file
+    const famDir = join(dir, 'ms-ellis')
+    expect(res.savedTo).toBe(famDir)
+
+    // family.json holds metadata + base, but NOT the variants array
+    const familyJson = JSON.parse(readFileSync(join(famDir, 'family.json'), 'utf-8'))
+    expect(familyJson._familyId).toBe('fam1')
+    expect(familyJson.entryVariantKey).toBe('nivelador')
+    expect(familyJson.base).toEqual({ identity: { language: 'es' } })
+    expect(familyJson.variants).toBeUndefined()
+
+    // one readable file per variant under variants/
+    const nivelador = JSON.parse(readFileSync(join(famDir, 'variants', 'nivelador.json'), 'utf-8'))
+    expect(nivelador).toEqual({ key: 'nivelador', label: 'Nivelador', overrides: {} })
+    const a1 = JSON.parse(readFileSync(join(famDir, 'variants', 'a1.json'), 'utf-8'))
+    expect(a1.overrides.identity.tone).toBe('x')
   })
 
   it('import (inline) PUTs the family to /import', async () => {
@@ -238,6 +254,37 @@ describe('agent family tools — export / import', () => {
     expect(client.calls[0].payload._familyId).toBeUndefined()
     expect(client.calls[0].payload.entryVariantKey).toBe('nivelador')
     expect(res.importedFrom).toBe(file)
+  })
+
+  it('import (folder) reassembles family.json + variants/*.json into one payload', async () => {
+    const dir = makeTmpDir()
+    const famDir = join(dir, 'ms-ellis')
+    mkdirSync(join(famDir, 'variants'), { recursive: true })
+    writeFileSync(
+      join(famDir, 'family.json'),
+      JSON.stringify({
+        _exportedAt: '2026-06-20T00:00:00.000Z',
+        _familyId: 'fam-from-dir',
+        name: 'Ms. Ellis',
+        slug: 'ms-ellis',
+        entryVariantKey: 'nivelador',
+        base: {}
+      }),
+      'utf-8'
+    )
+    writeFileSync(join(famDir, 'variants', 'nivelador.json'), JSON.stringify({ key: 'nivelador', label: 'N', overrides: {} }), 'utf-8')
+    writeFileSync(join(famDir, 'variants', 'a1.json'), JSON.stringify({ key: 'a1', label: 'A1', overrides: {} }), 'utf-8')
+
+    const client = new MockClient() as any
+    const res = (await importAgentFamilyHandler(client, { filePath: famDir })) as any
+    expect(client.calls[0].path).toBe(`${BASE}/fam-from-dir/import`)
+    const payload = client.calls[0].payload
+    expect(payload._familyId).toBeUndefined()
+    expect(payload._exportedAt).toBeUndefined()
+    expect(payload.entryVariantKey).toBe('nivelador')
+    expect(payload.variants).toHaveLength(2)
+    expect(payload.variants.map((v: any) => v.key).sort()).toEqual(['a1', 'nivelador'])
+    expect(res.importedFrom).toBe(famDir)
   })
 
   it('import errors when neither familyId nor _familyId is available', async () => {

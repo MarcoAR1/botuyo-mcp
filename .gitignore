@@ -4,3 +4,8 @@ dist/
 .env
 .env.*
 .npmrc
+
+# Agent definitions are private — they live in botuyo-backend/agents/ (private repo).
+# Keep exported agent data (export_agent_family / export_agent_json) out of this public repo.
+agents/
+agent-families/
