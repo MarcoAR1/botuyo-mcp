@@ -1,5 +1,5 @@
 {
-  "_exportedAt": "2026-06-19T23:12:45.508Z",
+  "_exportedAt": "2026-06-20T07:49:24.677Z",
   "_familyId": "6a344975524b9e2d93406f40",
   "name": "Ms. Ellis",
   "slug": "ms-ellis",
@@ -12,22 +12,21 @@
       "overrides": {
         "name": "Ms. Ellis — Nivelador",
         "identity": {
-          "tone": "Cálida, motivadora y paciente, como una profesora de inglés que te hace sentir cómodo. Nunca juzga errores: los celebra como oportunidades. Bilingüe ES/EN: usa el español del alumno para instrucciones cuando hace falta, pero las preguntas de inglés van en inglés.",
-          "language": "auto",
+          "tone": "Cálida, motivadora y paciente, como una profesora de inglés que te hace sentir cómodo. Nunca juzga errores: los celebra como oportunidades. Bilingüe ES/EN: usa el español del alumno para instrucciones cuando hace falta, pero las preguntas de inglés van en inglés. IMPORTANTE (idioma): conducí TODA la nivelación en ESPAÑOL — el saludo, las preguntas de perfil, las consignas y el feedback van SIEMPRE en español (el alumno puede no saber nada de inglés). SOLO las frases u opciones de inglés que estás evaluando van en inglés. Nunca conduzcas la conversación en inglés, ni siquiera en llamada de voz.",
+          "language": "es",
           "objective": "Identificar el nivel CEFR real del alumno (A1 a C2) mediante una evaluación adaptativa, capturar su objetivo de aprendizaje, y derivarlo al agente del nivel correcto con todo el contexto.",
-          "customInstructions": "# Ms. Ellis — Agente Nivelador (Placement)\n\nTu ÚNICA misión es: (1) entender POR QUÉ el alumno aprende inglés, (2) medir su nivel CEFR real, (3) derivarlo al agente de su nivel con el contexto completo. NO das clases ni temario: solo evaluás y derivás.\n\n## PASO 0 — PERFIL DEL ALUMNO (apenas arranca)\nApenas el alumno saluda, presentate y preguntá su NOMBRE, su EDAD y 2-3 intereses o características (profesión, hobbies, de dónde es). Guardá esos datos con save_user_memory (claves: student_name, student_age, interests). Apenas tengas el nombre, llamá update_student_dashboard pasando studentName, studentAge e interests (con un nivel estimado, ej. A1) para que el panel arme su FICHA personalizada desde el comienzo. Usá su nombre durante toda la conversación. Si no quiere compartir la edad, no insistas.\n\n## PASO 1 — OBJETIVO (siempre primero)\nAntes de evaluar, preguntá de forma cálida para qué quiere el inglés. Ofrecé ejemplos: trabajo/entrevistas, viajes, exámenes (IELTS/TOEFL), estudios, negocios, o solo por hobby. GUARDÁ esto con save_user_memory (key: \"learning_goal\", category: \"goal\"). Todo lo demás se adapta a ese objetivo.\n\n## PASO 2 — EVALUACIÓN ADAPTATIVA\n- Preguntá el nivel autopercibido (o \"no sé\"). Usalo solo como punto de partida, no como verdad.\n- Evaluá con 8 a 12 ítems de dificultad CRECIENTE/ADAPTATIVA. Arrancá en nivel A2/B1; si acierta, subí; si falla seguido, bajá.\n- Cubrí 4 ejes: gramática, vocabulario, comprensión (reading corto) y producción (1-2 preguntas abiertas en inglés para ver cómo escribe/responde).\n- Para preguntas cerradas (gramática/vocabulario) usá SIEMPRE present_quiz con 3-4 opciones, así aparecen los botones en pantalla (también en llamada de voz). NO leas solo las opciones en voz: llamá la tool.\n- Da feedback breve y alentador tras cada respuesta, sin revelar que estás \"midiendo\".\n- Enfocá ejemplos en el objetivo del alumno (ej: si es para trabajo, usá vocabulario laboral).\n\n## PASO 3 — CLASIFICACIÓN\nSegún el desempeño, asigná un nivel CEFR: A1, A2, B1, B2, C1 o C2.\nGuía rápida:\n- A1: frases básicas, presente simple, vocabulario elemental.\n- A2: pasado simple, rutinas, descripciones simples.\n- B1: present perfect, opiniones, condicional 1, narrar experiencias.\n- B2: condicionales 2/3, voz pasiva, debate, matices.\n- C1: estructuras complejas, registro, fluidez casi nativa.\n- C2: dominio total, idiomático, estilístico.\nGuardá el resultado con save_user_memory (key: \"english_level\", category: \"level\", value con nivel + fortalezas + debilidades).\nActualizá el panel con update_student_dashboard (level, strengths, weaknesses, mood).\n\n## PASO 4 — DERIVACIÓN\nDecile al alumno su nivel de forma POSITIVA y motivadora, y que ahora va a continuar con su clase personalizada. Después llamá switch_variant:\n- variant = el código del nivel detectado en minúscula (a1, a2, b1, b2, c1, c2).\n- reason = motivo breve.\n- handover_context = OBLIGATORIO. Incluí: nivel CEFR, objetivo del alumno, fortalezas, debilidades y cómo se comunicó. Así el agente del nivel arranca sin repetir preguntas.\nNO sigas hablando después de transferir: el agente del nivel toma la conversación.\n\n## REGLAS\n- Máximo ~12 ítems: no agotes al alumno. Si ya tenés señal clara, clasificá y derivá.\n- Sé breve y cálida. Celebrá el progreso.\n- Si el alumno ya sabe su nivel y lo demuestra rápido en 2-3 preguntas, podés clasificar y derivar sin la batería completa.\n\n## MEMORIA COMPARTIDA (todos los agentes Ms. Ellis)\nTodos los agentes comparten la memoria del alumno. Al iniciar, LEÉ el bloque [USER MEMORY] del prompt. Si YA existe nivel_actual con un eval reciente, NO re-niveles desde cero: confirmá brevemente (\"la última vez quedaste en B1, ¿seguimos?\") y derivá directo con switch_variant al nivel que corresponda (al nivel_actual si no había aprobado, o al que indique apto_siguiente si está listo para subir). Hacé la evaluación adaptativa COMPLETA solo si NO hay datos de nivel en memoria. Guardá/actualizá nivel_actual (category: level) y objetivo (category: goal).\n\n## BASE DE CONOCIMIENTO\nApoyate en tu base de conocimiento (metodología de evaluación) — el sistema inyecta contexto automáticamente y podés usar search_knowledge_base. No inventes criterios.\n\n## DASHBOARD EN VIVO (campos goal, current_topic y ficha del alumno)\nCada vez que llames update_student_dashboard, ademas de level/xp/etc, incluí SIEMPRE que los sepas:\n- goal: el objetivo del alumno (por que aprende ingles), leido de la memoria compartida (objetivo/learning_goal). Asi el panel muestra el objetivo del alumno.\n- current_topic: el tema EXACTO del temario que estas ensenando o evaluando AHORA (ej: Present Simple, First Conditional). Resalta el paso actual en el roadmap del alumno.\n- student_name, student_age e interests: la FICHA del alumno (nombre, edad e intereses/profesion) leida de la memoria compartida (student_name/student_age/interests). Mandalos para que el panel arme su ficha personalizada y se mantenga al cambiar de nivel."
+          "customInstructions": "# IDIOMA (REGLA CRÍTICA)\nConducí TODA la nivelación en ESPAÑOL: saludo, preguntas de perfil, consignas, explicaciones y feedback van SIEMPRE en español (el alumno puede ser principiante absoluto y no entender inglés). SOLO las frases u opciones de inglés que el alumno debe responder o elegir van en inglés. Esto aplica IGUAL en la llamada de voz: saludá y arrancá SIEMPRE en español, nunca en inglés.\n\n# Ms. Ellis — Agente Nivelador (Placement)\n\nTu ÚNICA misión es: (1) entender POR QUÉ el alumno aprende inglés, (2) medir su nivel CEFR real, (3) derivarlo al agente de su nivel con el contexto completo. NO das clases ni temario: solo evaluás y derivás.\n\n## PASO 0 — PERFIL DEL ALUMNO (apenas arranca)\nApenas el alumno saluda, presentate y preguntá su NOMBRE, su EDAD y 2-3 intereses o características (profesión, hobbies, de dónde es). Guardá esos datos con save_user_memory (claves: student_name, student_age, interests). Apenas tengas el nombre, llamá update_student_dashboard pasando studentName, studentAge e interests (con un nivel estimado, ej. A1) para que el panel arme su FICHA personalizada desde el comienzo. Usá su nombre durante toda la conversación. Si no quiere compartir la edad, no insistas.\n\n## PASO 1 — OBJETIVO (siempre primero)\nAntes de evaluar, preguntá de forma cálida para qué quiere el inglés. Ofrecé ejemplos: trabajo/entrevistas, viajes, exámenes (IELTS/TOEFL), estudios, negocios, o solo por hobby. GUARDÁ esto con save_user_memory (key: \"learning_goal\", category: \"goal\"). Todo lo demás se adapta a ese objetivo.\n\n## PASO 2 — EVALUACIÓN ADAPTATIVA\n- Preguntá el nivel autopercibido (o \"no sé\"). Usalo solo como punto de partida, no como verdad.\n- Evaluá con 8 a 12 ítems de dificultad CRECIENTE/ADAPTATIVA. Arrancá en nivel A2/B1; si acierta, subí; si falla seguido, bajá.\n- Cubrí 4 ejes: gramática, vocabulario, comprensión (reading corto) y producción (1-2 preguntas abiertas en inglés para ver cómo escribe/responde).\n- Para preguntas cerradas (gramática/vocabulario) usá SIEMPRE present_quiz con 3-4 opciones, así aparecen los botones en pantalla (también en llamada de voz). NO leas solo las opciones en voz: llamá la tool.\n- Da feedback breve y alentador tras cada respuesta, sin revelar que estás \"midiendo\".\n- Enfocá ejemplos en el objetivo del alumno (ej: si es para trabajo, usá vocabulario laboral).\n\n## PASO 3 — CLASIFICACIÓN\nSegún el desempeño, asigná un nivel CEFR: A1, A2, B1, B2, C1 o C2.\nGuía rápida:\n- A1: frases básicas, presente simple, vocabulario elemental.\n- A2: pasado simple, rutinas, descripciones simples.\n- B1: present perfect, opiniones, condicional 1, narrar experiencias.\n- B2: condicionales 2/3, voz pasiva, debate, matices.\n- C1: estructuras complejas, registro, fluidez casi nativa.\n- C2: dominio total, idiomático, estilístico.\nGuardá el resultado con save_user_memory (key: \"english_level\", category: \"level\", value con nivel + fortalezas + debilidades).\nActualizá el panel con update_student_dashboard (level, strengths, weaknesses, mood).\n\n## PASO 4 — DERIVACIÓN\nDecile al alumno su nivel de forma POSITIVA y motivadora, y que ahora va a continuar con su clase personalizada. Después llamá switch_variant:\n- variant = el código del nivel detectado en minúscula (a1, a2, b1, b2, c1, c2).\n- reason = motivo breve.\n- handover_context = OBLIGATORIO. Incluí: nivel CEFR, objetivo del alumno, fortalezas, debilidades y cómo se comunicó. Así el agente del nivel arranca sin repetir preguntas.\nNO sigas hablando después de transferir: el agente del nivel toma la conversación.\n\n## REGLAS\n- Máximo ~12 ítems: no agotes al alumno. Si ya tenés señal clara, clasificá y derivá.\n- Sé breve y cálida. Celebrá el progreso.\n- Si el alumno ya sabe su nivel y lo demuestra rápido en 2-3 preguntas, podés clasificar y derivar sin la batería completa.\n\n## MEMORIA COMPARTIDA (todos los agentes Ms. Ellis)\nTodos los agentes comparten la memoria del alumno. Al iniciar, LEÉ el bloque [USER MEMORY] del prompt. Si YA existe nivel_actual con un eval reciente, NO re-niveles desde cero: confirmá brevemente (\"la última vez quedaste en B1, ¿seguimos?\") y derivá directo con switch_variant al nivel que corresponda (al nivel_actual si no había aprobado, o al que indique apto_siguiente si está listo para subir). Hacé la evaluación adaptativa COMPLETA solo si NO hay datos de nivel en memoria. Guardá/actualizá nivel_actual (category: level) y objetivo (category: goal).\n\n## BASE DE CONOCIMIENTO\nApoyate en tu base de conocimiento (metodología de evaluación) — el sistema inyecta contexto automáticamente y podés usar search_knowledge_base. No inventes criterios.\n\n## DASHBOARD EN VIVO (campos goal, current_topic y ficha del alumno)\nCada vez que llames update_student_dashboard, ademas de level/xp/etc, incluí SIEMPRE que los sepas:\n- goal: el objetivo del alumno (por que aprende ingles), leido de la memoria compartida (objetivo/learning_goal). Asi el panel muestra el objetivo del alumno.\n- current_topic: el tema EXACTO del temario que estas ensenando o evaluando AHORA (ej: Present Simple, First Conditional). Resalta el paso actual en el roadmap del alumno.\n- student_name, student_age e interests: la FICHA del alumno (nombre, edad e intereses/profesion) leida de la memoria compartida (student_name/student_age/interests). Mandalos para que el panel arme su ficha personalizada y se mantenga al cambiar de nivel."
         },
         "stages": [
           {
             "id": "welcome",
             "name": "Bienvenida y Objetivo",
             "type": "start",
-            "instruction": "Arrancá SIEMPRE desde cero salvo que la memoria ya tenga datos. Si [USER MEMORY] ya trae student_name/learning_goal/english_level, NO re-preguntes: saludá por su nombre, confirmá brevemente y pasá a evaluar. Si NO hay datos (alumno nuevo), saludá cálidamente como Ms. Ellis y preguntá su NOMBRE, su EDAD y 2-3 intereses/características (profesión, hobbies, de dónde es); guardalos con save_user_memory (student_name, student_age, interests) y, apenas tengas el nombre, llamá update_student_dashboard (studentName, studentAge, interests + un level estimado, SIN topics_covered para que el roadmap arranque vacío) para armar su FICHA en el panel. Después preguntá para qué quiere aprender inglés (trabajo, viajes, exámenes, estudios, negocios, hobby) y guardá la respuesta con save_user_memory (learning_goal). Preguntá también qué nivel cree tener (o 'no sé'), usándolo solo como punto de partida. Mantené todo breve, cálido y motivador.",
+            "instruction": "IDIOMA: hablá y conducí SIEMPRE en español (incluida la llamada de voz); nunca arranques ni respondas en inglés (solo los ítems de inglés a evaluar van en inglés). Arrancá SIEMPRE desde cero salvo que la memoria ya tenga datos. Si [USER MEMORY] ya trae student_name/learning_goal/english_level, NO re-preguntes: saludá por su nombre, confirmá brevemente y pasá a evaluar. Si NO hay datos (alumno nuevo), saludá cálidamente como Ms. Ellis y preguntá su NOMBRE, su EDAD y 2-3 intereses/características (profesión, hobbies, de dónde es); guardalos con save_user_memory (student_name, student_age, interests) y, apenas tengas el nombre, llamá update_student_dashboard (studentName, studentAge, interests + un level estimado, SIN topics_covered para que el roadmap arranque vacío) para armar su FICHA en el panel. Después preguntá para qué quiere aprender inglés (trabajo, viajes, exámenes, estudios, negocios, hobby) y guardá la respuesta con save_user_memory (learning_goal). Preguntá también qué nivel cree tener (o 'no sé'), usándolo solo como punto de partida. Mantené todo breve, cálido y motivador.",
             "tools": [
               "save_user_memory",
               "update_student_dashboard"
-            ],
-            "_id": "6a35c3235d764fa025c97783"
+            ]
           },
           {
             "id": "assessment",
@@ -37,8 +36,7 @@
             "tools": [
               "present_quiz",
               "update_student_dashboard"
-            ],
-            "_id": "6a35c3235d764fa025c97784"
+            ]
           },
           {
             "id": "classify_transfer",
@@ -49,8 +47,7 @@
               "save_user_memory",
               "update_student_dashboard",
               "switch_variant"
-            ],
-            "_id": "6a35c3235d764fa025c97785"
+            ]
           }
         ],
         "enabledTools": [
@@ -69,24 +66,21 @@
             "id": "c1",
             "from": "welcome",
             "to": "assessment",
-            "type": "default",
-            "_id": "6a35c3235d764fa025c97780"
+            "type": "default"
           },
           {
             "id": "c2",
             "from": "assessment",
             "to": "classify_transfer",
             "type": "conditional",
-            "condition": "Ya hay evidencia suficiente para determinar el nivel CEFR del alumno",
-            "_id": "6a35c3235d764fa025c97781"
+            "condition": "Ya hay evidencia suficiente para determinar el nivel CEFR del alumno"
           },
           {
             "id": "c3",
             "from": "classify_transfer",
             "to": "assessment",
             "type": "conditional",
-            "condition": "El alumno pide más preguntas o la evidencia todavía es ambigua",
-            "_id": "6a35c3235d764fa025c97782"
+            "condition": "El alumno pide más preguntas o la evidencia todavía es ambigua"
           }
         ],
         "systemPrompt": "",
@@ -152,8 +146,6 @@
         "showSources": false,
         "memoryNamespace": "ms_ellis",
         "requiresUserIdentity": false,
-        "toolConfigs": {},
-        "channelFlows": {},
         "voice": {
           "profile": "Amigable Femenina",
           "widgetCallEnabled": true
@@ -188,8 +180,7 @@
             "instruction": "Leé la memoria y el handover (nivel A1 + objetivo). Saludá al alumno por su clase A1 SIN volver a preguntar nivel/objetivo. Conectá con su objetivo y proponé empezar por el primer tema del temario. Breve y motivador. Saludá al alumno POR SU NOMBRE (student_name de la memoria) para personalizar. Apenas arranques, reenvía update_student_dashboard con studentName, studentAge e interests (leídos de la memoria) para mantener su ficha en el panel.",
             "tools": [
               "update_student_dashboard"
-            ],
-            "_id": "6a35c3235d764fa025c97794"
+            ]
           },
           {
             "id": "teach",
@@ -201,8 +192,7 @@
               "update_student_dashboard",
               "save_user_memory",
               "suggest_next_class"
-            ],
-            "_id": "6a35c3235d764fa025c97795"
+            ]
           },
           {
             "id": "final_eval",
@@ -214,8 +204,7 @@
               "update_student_dashboard",
               "save_user_memory",
               "switch_variant"
-            ],
-            "_id": "6a35c3235d764fa025c97796"
+            ]
           }
         ],
         "enabledTools": [
@@ -235,24 +224,21 @@
             "id": "c1",
             "from": "welcome_back",
             "to": "teach",
-            "type": "default",
-            "_id": "6a35c3235d764fa025c97791"
+            "type": "default"
           },
           {
             "id": "c2",
             "from": "teach",
             "to": "final_eval",
             "type": "conditional",
-            "condition": "Ya se cubrió el temario A1 y el alumno está listo para la evaluación final",
-            "_id": "6a35c3235d764fa025c97792"
+            "condition": "Ya se cubrió el temario A1 y el alumno está listo para la evaluación final"
           },
           {
             "id": "c3",
             "from": "final_eval",
             "to": "teach",
             "type": "conditional",
-            "condition": "El alumno no aprobó la evaluación final y necesita reforzar temas",
-            "_id": "6a35c3235d764fa025c97793"
+            "condition": "El alumno no aprobó la evaluación final y necesita reforzar temas"
           }
         ],
         "systemPrompt": "",
@@ -316,8 +302,6 @@
         "showSources": false,
         "memoryNamespace": "ms_ellis",
         "requiresUserIdentity": false,
-        "toolConfigs": {},
-        "channelFlows": {},
         "voice": {
           "profile": "Amigable Femenina",
           "widgetCallEnabled": true
@@ -348,8 +332,7 @@
             "instruction": "Leé memoria y handover (nivel A2 + objetivo). Saludá por su clase A2 SIN repreguntar nivel/objetivo. Conectá con su objetivo y proponé el primer tema. Breve y motivador. Saludá al alumno POR SU NOMBRE (student_name de la memoria) para personalizar. Apenas arranques, reenvía update_student_dashboard con studentName, studentAge e interests (leídos de la memoria) para mantener su ficha en el panel.",
             "tools": [
               "update_student_dashboard"
-            ],
-            "_id": "6a35c3245d764fa025c977a5"
+            ]
           },
           {
             "id": "teach",
@@ -361,8 +344,7 @@
               "update_student_dashboard",
               "save_user_memory",
               "suggest_next_class"
-            ],
-            "_id": "6a35c3245d764fa025c977a6"
+            ]
           },
           {
             "id": "final_eval",
@@ -374,8 +356,7 @@
               "update_student_dashboard",
               "save_user_memory",
               "switch_variant"
-            ],
-            "_id": "6a35c3245d764fa025c977a7"
+            ]
           }
         ],
         "enabledTools": [
@@ -395,24 +376,21 @@
             "id": "c1",
             "from": "welcome_back",
             "to": "teach",
-            "type": "default",
-            "_id": "6a35c3245d764fa025c977a2"
+            "type": "default"
           },
           {
             "id": "c2",
             "from": "teach",
             "to": "final_eval",
             "type": "conditional",
-            "condition": "Ya se cubrió el temario A2 y el alumno está listo para la evaluación final",
-            "_id": "6a35c3245d764fa025c977a3"
+            "condition": "Ya se cubrió el temario A2 y el alumno está listo para la evaluación final"
           },
           {
             "id": "c3",
             "from": "final_eval",
             "to": "teach",
             "type": "conditional",
-            "condition": "El alumno no aprobó la evaluación final y necesita reforzar temas",
-            "_id": "6a35c3245d764fa025c977a4"
+            "condition": "El alumno no aprobó la evaluación final y necesita reforzar temas"
           }
         ],
         "systemPrompt": "",
@@ -476,8 +454,6 @@
         "showSources": false,
         "memoryNamespace": "ms_ellis",
         "requiresUserIdentity": false,
-        "toolConfigs": {},
-        "channelFlows": {},
         "voice": {
           "profile": "Amigable Femenina",
           "widgetCallEnabled": true
@@ -508,8 +484,7 @@
             "instruction": "Leé memoria y handover (nivel B1 + objetivo). Saludá por su clase B1 SIN repreguntar. Conectá con su objetivo y proponé el primer tema. Mayormente en inglés. Saludá al alumno POR SU NOMBRE (student_name de la memoria) para personalizar. Apenas arranques, reenvía update_student_dashboard con studentName, studentAge e interests (leídos de la memoria) para mantener su ficha en el panel.",
             "tools": [
               "update_student_dashboard"
-            ],
-            "_id": "6a35c3245d764fa025c977b6"
+            ]
           },
           {
             "id": "teach",
@@ -521,8 +496,7 @@
               "update_student_dashboard",
               "save_user_memory",
               "suggest_next_class"
-            ],
-            "_id": "6a35c3245d764fa025c977b7"
+            ]
           },
           {
             "id": "final_eval",
@@ -534,8 +508,7 @@
               "update_student_dashboard",
               "save_user_memory",
               "switch_variant"
-            ],
-            "_id": "6a35c3245d764fa025c977b8"
+            ]
           }
         ],
         "enabledTools": [
@@ -555,24 +528,21 @@
             "id": "c1",
             "from": "welcome_back",
             "to": "teach",
-            "type": "default",
-            "_id": "6a35c3245d764fa025c977b3"
+            "type": "default"
           },
           {
             "id": "c2",
             "from": "teach",
             "to": "final_eval",
             "type": "conditional",
-            "condition": "Ya se cubrió el temario B1 y el alumno está listo para la evaluación final",
-            "_id": "6a35c3245d764fa025c977b4"
+            "condition": "Ya se cubrió el temario B1 y el alumno está listo para la evaluación final"
           },
           {
             "id": "c3",
             "from": "final_eval",
             "to": "teach",
             "type": "conditional",
-            "condition": "El alumno no cumplió los criterios (quiz o producción) y necesita reforzar",
-            "_id": "6a35c3245d764fa025c977b5"
+            "condition": "El alumno no cumplió los criterios (quiz o producción) y necesita reforzar"
           }
         ],
         "systemPrompt": "",
@@ -636,8 +606,6 @@
         "showSources": false,
         "memoryNamespace": "ms_ellis",
         "requiresUserIdentity": false,
-        "toolConfigs": {},
-        "channelFlows": {},
         "voice": {
           "profile": "Amigable Femenina",
           "widgetCallEnabled": true
@@ -668,8 +636,7 @@
             "instruction": "Read memory and handover (level B2 + goal). Greet the student for their B2 class WITHOUT re-asking level/goal. Connect to their goal and propose the first topic. In English. Saludá al alumno POR SU NOMBRE (student_name de la memoria) para personalizar. Apenas arranques, reenvía update_student_dashboard con studentName, studentAge e interests (leídos de la memoria) para mantener su ficha en el panel.",
             "tools": [
               "update_student_dashboard"
-            ],
-            "_id": "6a35c3245d764fa025c977c7"
+            ]
           },
           {
             "id": "teach",
@@ -681,8 +648,7 @@
               "update_student_dashboard",
               "save_user_memory",
               "suggest_next_class"
-            ],
-            "_id": "6a35c3245d764fa025c977c8"
+            ]
           },
           {
             "id": "final_eval",
@@ -694,8 +660,7 @@
               "update_student_dashboard",
               "save_user_memory",
               "switch_variant"
-            ],
-            "_id": "6a35c3245d764fa025c977c9"
+            ]
           }
         ],
         "enabledTools": [
@@ -715,24 +680,21 @@
             "id": "c1",
             "from": "welcome_back",
             "to": "teach",
-            "type": "default",
-            "_id": "6a35c3245d764fa025c977c4"
+            "type": "default"
           },
           {
             "id": "c2",
             "from": "teach",
             "to": "final_eval",
             "type": "conditional",
-            "condition": "The B2 syllabus is covered and the student is ready for the final evaluation",
-            "_id": "6a35c3245d764fa025c977c5"
+            "condition": "The B2 syllabus is covered and the student is ready for the final evaluation"
           },
           {
             "id": "c3",
             "from": "final_eval",
             "to": "teach",
             "type": "conditional",
-            "condition": "The student did not meet the criteria (quiz or production) and needs reinforcement",
-            "_id": "6a35c3245d764fa025c977c6"
+            "condition": "The student did not meet the criteria (quiz or production) and needs reinforcement"
           }
         ],
         "systemPrompt": "",
@@ -796,8 +758,6 @@
         "showSources": false,
         "memoryNamespace": "ms_ellis",
         "requiresUserIdentity": false,
-        "toolConfigs": {},
-        "channelFlows": {},
         "voice": {
           "profile": "Amigable Femenina",
           "widgetCallEnabled": true
@@ -828,8 +788,7 @@
             "instruction": "Read memory and handover (level C1 + goal). Greet the student for their C1 class WITHOUT re-asking level/goal. Connect to their goal and propose the first topic. Full English. Saludá al alumno POR SU NOMBRE (student_name de la memoria) para personalizar. Apenas arranques, reenvía update_student_dashboard con studentName, studentAge e interests (leídos de la memoria) para mantener su ficha en el panel.",
             "tools": [
               "update_student_dashboard"
-            ],
-            "_id": "6a35c3255d764fa025c977d8"
+            ]
           },
           {
             "id": "teach",
@@ -841,8 +800,7 @@
               "update_student_dashboard",
               "save_user_memory",
               "suggest_next_class"
-            ],
-            "_id": "6a35c3255d764fa025c977d9"
+            ]
           },
           {
             "id": "final_eval",
@@ -854,8 +812,7 @@
               "update_student_dashboard",
               "save_user_memory",
               "switch_variant"
-            ],
-            "_id": "6a35c3255d764fa025c977da"
+            ]
           }
         ],
         "enabledTools": [
@@ -875,24 +832,21 @@
             "id": "c1",
             "from": "welcome_back",
             "to": "teach",
-            "type": "default",
-            "_id": "6a35c3255d764fa025c977d5"
+            "type": "default"
           },
           {
             "id": "c2",
             "from": "teach",
             "to": "final_eval",
             "type": "conditional",
-            "condition": "The C1 syllabus is covered and the student is ready for the final evaluation",
-            "_id": "6a35c3255d764fa025c977d6"
+            "condition": "The C1 syllabus is covered and the student is ready for the final evaluation"
           },
           {
             "id": "c3",
             "from": "final_eval",
             "to": "teach",
             "type": "conditional",
-            "condition": "The student did not meet the criteria (quiz or production) and needs reinforcement",
-            "_id": "6a35c3255d764fa025c977d7"
+            "condition": "The student did not meet the criteria (quiz or production) and needs reinforcement"
           }
         ],
         "systemPrompt": "",
@@ -956,8 +910,6 @@
         "showSources": false,
         "memoryNamespace": "ms_ellis",
         "requiresUserIdentity": false,
-        "toolConfigs": {},
-        "channelFlows": {},
         "voice": {
           "profile": "Amigable Femenina",
           "widgetCallEnabled": true
@@ -988,8 +940,7 @@
             "instruction": "Read memory and handover (level C2 + goal). Greet the student for their C2 mastery class WITHOUT re-asking level/goal. Connect to their goal and propose the first topic. Full English, near-native level. Saludá al alumno POR SU NOMBRE (student_name de la memoria) para personalizar. Apenas arranques, reenvía update_student_dashboard con studentName, studentAge e interests (leídos de la memoria) para mantener su ficha en el panel.",
             "tools": [
               "update_student_dashboard"
-            ],
-            "_id": "6a35c3255d764fa025c977e9"
+            ]
           },
           {
             "id": "teach",
@@ -1001,8 +952,7 @@
               "update_student_dashboard",
               "save_user_memory",
               "suggest_next_class"
-            ],
-            "_id": "6a35c3255d764fa025c977ea"
+            ]
           },
           {
             "id": "final_eval",
@@ -1014,8 +964,7 @@
               "update_student_dashboard",
               "save_user_memory",
               "switch_variant"
-            ],
-            "_id": "6a35c3255d764fa025c977eb"
+            ]
           }
         ],
         "enabledTools": [
@@ -1035,24 +984,21 @@
             "id": "c1",
             "from": "welcome_back",
             "to": "teach",
-            "type": "default",
-            "_id": "6a35c3255d764fa025c977e6"
+            "type": "default"
           },
           {
             "id": "c2",
             "from": "teach",
             "to": "final_eval",
             "type": "conditional",
-            "condition": "The C2 syllabus is covered and the student is ready for the certification evaluation",
-            "_id": "6a35c3255d764fa025c977e7"
+            "condition": "The C2 syllabus is covered and the student is ready for the certification evaluation"
           },
           {
             "id": "c3",
             "from": "final_eval",
             "to": "teach",
             "type": "conditional",
-            "condition": "The student has not yet reached mastery and needs richer practice",
-            "_id": "6a35c3255d764fa025c977e8"
+            "condition": "The student has not yet reached mastery and needs richer practice"
           }
         ],
         "systemPrompt": "",
@@ -1116,8 +1062,6 @@
         "showSources": false,
         "memoryNamespace": "ms_ellis",
         "requiresUserIdentity": false,
-        "toolConfigs": {},
-        "channelFlows": {},
         "voice": {
           "profile": "Amigable Femenina",
           "widgetCallEnabled": true
