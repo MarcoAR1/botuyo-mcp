@@ -1,12 +1,18 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js'
 import type { BotuyoApiClient } from '../client.js'
-import { readFileSync, existsSync } from 'fs'
-import { resolve } from 'path'
+import { readFileSync, existsSync, statSync } from 'fs'
+import { resolve, basename, join } from 'path'
 import { voiceProfileHelp } from '../format.js'
+import { importAgentFamilyHandler } from './agent_families.js'
 
 export const IMPORT_AGENT_JSON_TOOL: Tool = {
   name: 'import_agent_json',
   description: `Import/replace an agent's FULL configuration from a local JSON file or from a JSON object.
+
+Unified model: if filePath points to a FAMILY export (a folder with family.json + variants/,
+a family.json, or a payload carrying \`variants\`/\`_meta\`), this round-trips through the family
+importer (respects base + variants) — identical to import_agent_family. Otherwise it does the
+legacy single-agent member import below.
 
 **This is a FULL REPLACE operation** — the entire agentConfig is overwritten with the provided config.
 For partial updates (changing just one field), use update_agent instead.
@@ -133,11 +139,21 @@ Requires role: owner, admin, or developer.`,
 }
 
 export async function importAgentJsonHandler(client: BotuyoApiClient, args: Record<string, unknown>) {
+  const filePath = args.filePath as string | undefined
+
+  // Unified model: a family export (folder / family.json / payload carrying variants or _meta)
+  // round-trips through the family importer (respects base + variants, not the raw member).
+  if (filePath && existsSync(resolve(filePath)) && isFamilyExport(resolve(filePath))) {
+    return importAgentFamilyHandler(client, {
+      ...(args.familyId ? { familyId: args.familyId as string } : {}),
+      filePath
+    })
+  }
+
   let agentId = args.agentId as string | undefined
   let agentConfig = args.agentConfig as Record<string, unknown> | undefined
 
   // If filePath is provided, read the JSON from local filesystem
-  const filePath = args.filePath as string | undefined
   if (filePath) {
     const resolvedPath = resolve(filePath)
 
@@ -190,5 +206,24 @@ export async function importAgentJsonHandler(client: BotuyoApiClient, args: Reco
   return {
     ...(result as any),
     importedFrom: filePath ? resolve(filePath) : 'inline',
+  }
+}
+
+/**
+ * Whether `resolvedPath` looks like a family export (vs a legacy single-agent file):
+ *  - a directory containing family.json,
+ *  - a family.json file,
+ *  - a JSON payload carrying a `variants` array or the versioned `_meta` envelope.
+ * Family exports round-trip through import_agent_family; everything else stays legacy.
+ */
+function isFamilyExport(resolvedPath: string): boolean {
+  const stat = statSync(resolvedPath)
+  if (stat.isDirectory()) return existsSync(join(resolvedPath, 'family.json'))
+  if (basename(resolvedPath).toLowerCase() === 'family.json') return true
+  try {
+    const parsed = JSON.parse(readFileSync(resolvedPath, 'utf-8')) as { variants?: unknown; _meta?: { schema?: unknown } }
+    return Array.isArray(parsed.variants) || typeof parsed._meta?.schema === 'string'
+  } catch {
+    return false
   }
 }

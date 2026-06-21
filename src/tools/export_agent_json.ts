@@ -2,10 +2,18 @@ import type { Tool } from '@modelcontextprotocol/sdk/types.js'
 import type { BotuyoApiClient } from '../client.js'
 import { writeFileSync, mkdirSync } from 'fs'
 import { join, resolve } from 'path'
+import { exportAgentFamilyHandler } from './agent_families.js'
 
 export const EXPORT_AGENT_JSON_TOOL: Tool = {
   name: 'export_agent_json',
-  description: `Export the full agent configuration as clean, editable JSON.
+  description: `Export an agent's configuration as clean, editable JSON.
+
+Unified model: if the agent belongs to a family (the normal case — every agent created
+via create_agent is a family-of-one), this exports the WHOLE logical agent as a portable
+FOLDER ({slug}/family.json + variants/<key>.json; a simple agent has exactly one variant
+file) — identical to export_agent_family. Re-import with import_agent_json or import_agent_family.
+
+For a legacy standalone agent (e.g. module-managed) it falls back to a single flat JSON file:
 
 Returns the complete agentConfig including identity, stages, connections (graph edges),
 channelFlows, enabledTools, channels, widgetConfig, voice, and all other settings.
@@ -28,6 +36,16 @@ Use import_agent_json to re-import after editing.`,
 
 export async function exportAgentJsonHandler(client: BotuyoApiClient, args: Record<string, unknown>) {
   const agentId = args.agentId as string
+
+  // Unified model: if this agent belongs to a family (incl. a backfilled family-of-1),
+  // export the whole logical agent in the uniform folder layout (simple = 1 variant file).
+  const agentRes = (await client.get(`/api/v1/mcp/agents/${agentId}`)) as { data?: { familyId?: string | null } }
+  const familyId = agentRes?.data?.familyId
+  if (familyId) {
+    return exportAgentFamilyHandler(client, { familyId, ...(args.savePath ? { savePath: args.savePath } : {}) })
+  }
+
+  // Legacy standalone (module-managed / pre-backfill): original single-file export.
   const savePath = (args.savePath as string) || './agents'
 
   const result = await client.get(`/api/v1/mcp/agents/${agentId}/export`) as any

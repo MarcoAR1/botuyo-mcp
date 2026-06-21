@@ -10,6 +10,7 @@
  */
 
 import type { Tool } from '@modelcontextprotocol/sdk/types.js'
+import { buildExportMeta, parseExportMeta, sortVariantsByOrder } from '@botuyo/contracts'
 import type { BotuyoApiClient } from '../client.js'
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs'
 import { basename, dirname, join, resolve } from 'path'
@@ -274,8 +275,11 @@ export async function exportAgentFamilyHandler(client: BotuyoApiClient, args: Re
       const variants = Array.isArray(family.variants) ? family.variants : []
       const { variants: _variants, ...familyMeta } = family
       void _variants
-      // family.json: metadata + base, WITHOUT the (huge) variants array
-      const familyJson = { _exportedAt: new Date().toISOString(), _familyId: result.data.familyId, ...familyMeta }
+      // family.json: versioned _meta envelope + metadata + base, WITHOUT the (huge) variants array
+      const familyJson = {
+        _meta: buildExportMeta({ slug: family.slug, familyId: result.data.familyId }),
+        ...familyMeta
+      }
       writeFileSync(join(famDir, 'family.json'), JSON.stringify(familyJson, null, 2), 'utf-8')
       // one file per variant — small, readable, clean diffs
       for (const variant of variants) {
@@ -342,9 +346,13 @@ export async function importAgentFamilyHandler(client: BotuyoApiClient, args: Re
     }
     try {
       const parsed = readFamilyFromPath(resolvedPath)
-      const { _exportedAt, _familyId, ...content } = parsed
+      // Resolve provenance via the shared contract (versioned `_meta` or legacy `_familyId`).
+      if (!familyId) familyId = parseExportMeta(parsed).familyId
+      // Strip provenance fields so only authoring content reaches the API.
+      const { _exportedAt, _familyId, _meta, ...content } = parsed
       void _exportedAt
-      if (!familyId && _familyId) familyId = _familyId as string
+      void _familyId
+      void _meta
       family = content
     } catch (err: unknown) {
       return { success: false, error: `Failed to read/parse: ${err instanceof Error ? err.message : String(err)}`, path: resolvedPath }
@@ -407,5 +415,7 @@ function readFamilyFromFolder(dir: string): Record<string, unknown> {
       variants.push(JSON.parse(readFileSync(join(variantsDir, file), 'utf-8')) as Record<string, unknown>)
     }
   }
-  return { ...family, variants }
+  // Variant filenames are arbitrary; the source of truth for sequence is each variant's
+  // `order`. Stable-sort by order (order-less variants sink to the end) via the shared contract.
+  return { ...family, variants: sortVariantsByOrder(variants as Array<{ order?: number }>) }
 }

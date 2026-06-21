@@ -205,7 +205,11 @@ describe('agent family tools — export / import', () => {
 
     // family.json holds metadata + base, but NOT the variants array
     const familyJson = JSON.parse(readFileSync(join(famDir, 'family.json'), 'utf-8'))
-    expect(familyJson._familyId).toBe('fam1')
+    // versioned _meta envelope (replaces the flat _exportedAt/_familyId fields)
+    expect(familyJson._meta).toMatchObject({ schema: 'botuyo.agent/v1', familyId: 'fam1', slug: 'ms-ellis' })
+    expect(typeof familyJson._meta.exportedAt).toBe('string')
+    expect(familyJson._familyId).toBeUndefined()
+    expect(familyJson._exportedAt).toBeUndefined()
     expect(familyJson.entryVariantKey).toBe('nivelador')
     expect(familyJson.base).toEqual({ identity: { language: 'es' } })
     expect(familyJson.variants).toBeUndefined()
@@ -215,6 +219,52 @@ describe('agent family tools — export / import', () => {
     expect(nivelador).toEqual({ key: 'nivelador', label: 'Nivelador', overrides: {} })
     const a1 = JSON.parse(readFileSync(join(famDir, 'variants', 'a1.json'), 'utf-8'))
     expect(a1.overrides.identity.tone).toBe('x')
+  })
+
+  it('import (folder) reassembles variants ordered by `order`, not by filename', async () => {
+    const dir = makeTmpDir()
+    const famDir = join(dir, 'ordered')
+    mkdirSync(join(famDir, 'variants'), { recursive: true })
+    writeFileSync(
+      join(famDir, 'family.json'),
+      JSON.stringify({ _meta: { schema: 'botuyo.agent/v1', familyId: 'fam-ord', slug: 'ordered' }, entryVariantKey: 'first', base: {} }),
+      'utf-8'
+    )
+    // filenames sort to [entry, first, mid] but `order` is first(0) → mid(1) → entry(2)
+    writeFileSync(join(famDir, 'variants', 'entry.json'), JSON.stringify({ key: 'entry', label: 'E', overrides: {}, order: 2 }), 'utf-8')
+    writeFileSync(join(famDir, 'variants', 'first.json'), JSON.stringify({ key: 'first', label: 'F', overrides: {}, order: 0 }), 'utf-8')
+    writeFileSync(join(famDir, 'variants', 'mid.json'), JSON.stringify({ key: 'mid', label: 'M', overrides: {}, order: 1 }), 'utf-8')
+
+    const client = new MockClient() as any
+    await importAgentFamilyHandler(client, { filePath: famDir })
+    const payload = client.calls[0].payload
+    expect(payload.variants.map((v: any) => v.key)).toEqual(['first', 'mid', 'entry'])
+  })
+
+  it('import (folder) derives familyId from the _meta envelope and strips _meta', async () => {
+    const dir = makeTmpDir()
+    const famDir = join(dir, 'meta-fam')
+    mkdirSync(join(famDir, 'variants'), { recursive: true })
+    writeFileSync(
+      join(famDir, 'family.json'),
+      JSON.stringify({
+        _meta: { schema: 'botuyo.agent/v1', familyId: 'fam-meta', slug: 'meta-fam', exportedAt: '2026-06-21T00:00:00.000Z' },
+        name: 'Meta',
+        slug: 'meta-fam',
+        entryVariantKey: 'k',
+        base: {}
+      }),
+      'utf-8'
+    )
+    writeFileSync(join(famDir, 'variants', 'k.json'), JSON.stringify({ key: 'k', label: 'K', overrides: {}, order: 0 }), 'utf-8')
+
+    const client = new MockClient() as any
+    await importAgentFamilyHandler(client, { filePath: famDir })
+    expect(client.calls[0].path).toBe(`${BASE}/fam-meta/import`)
+    const payload = client.calls[0].payload
+    expect(payload._meta).toBeUndefined()
+    expect(payload.entryVariantKey).toBe('k')
+    expect(payload.variants).toHaveLength(1)
   })
 
   it('import (inline) PUTs the family to /import', async () => {
