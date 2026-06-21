@@ -60,6 +60,7 @@ import {
   IMPORT_AGENT_FAMILY_TOOL,
   importAgentFamilyHandler
 } from './agent_families.js'
+import { AUDIT_AGENT_FAMILY_TOOL, auditAgentFamilyHandler } from './audit_agent_family.js'
 export const ALL_TOOLS: Tool[] = [
   LIST_AGENTS_TOOL,
   GET_AGENT_TOOL,
@@ -102,6 +103,7 @@ export const ALL_TOOLS: Tool[] = [
   DELETE_AGENT_FAMILY_TOOL,
   EXPORT_AGENT_FAMILY_TOOL,
   IMPORT_AGENT_FAMILY_TOOL,
+  AUDIT_AGENT_FAMILY_TOOL,
 ]
 
 export type ToolHandler = (client: BotuyoApiClient, args: Record<string, unknown>) => Promise<unknown>
@@ -148,4 +150,5 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
   delete_agent_family: deleteAgentFamilyHandler,
   export_agent_family: exportAgentFamilyHandler,
   import_agent_family: importAgentFamilyHandler,
+  audit_agent_family: auditAgentFamilyHandler,
 }
