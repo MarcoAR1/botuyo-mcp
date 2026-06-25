@@ -306,13 +306,17 @@ export const IMPORT_AGENT_FAMILY_TOOL: Tool = {
     'dropped keys are soft-deleted. Subject to the per-plan maxVariantsPerFamily limit.\n\n' +
     'Provide the family via `filePath` (preferred — a folder from export_agent_family: family.json + variants/*.json; ' +
     'a single legacy .json also works) or inline `family`. If both are given, filePath wins. ' +
+    'If NO familyId is resolved (no arg and no _meta/_familyId in the file), a NEW family is CREATED from ' +
+    'the payload (requires entryVariantKey + at least one variant) — author a committed agent folder straight from disk. ' +
     'Requires role: owner, admin, or developer.',
   inputSchema: {
     type: 'object',
     properties: {
       familyId: {
         type: 'string',
-        description: 'The family id to overwrite. If omitted and the file contains _familyId, that is used.'
+        description:
+          'The family id to overwrite. If omitted and the file contains _familyId/_meta.familyId, that is used. ' +
+          'If still missing, a NEW family is created from the payload (needs entryVariantKey + ≥1 variant).'
       },
       filePath: { type: 'string', description: 'Path to a family folder (e.g. ./agent-families/ms-ellis), its family.json, or a single .json file.' },
       family: {
@@ -359,14 +363,31 @@ export async function importAgentFamilyHandler(client: BotuyoApiClient, args: Re
     }
   }
 
+  if (!family) {
+    return { success: false, error: 'No family payload. Use filePath to point to a local JSON file/folder, or provide family inline.' }
+  }
+
+  // No familyId (none passed, none in _meta/_familyId) → CREATE a brand-new family from the
+  // payload, as long as it carries enough to create (entryVariantKey + at least one variant). This
+  // lets a committed agent FOLDER be authored straight from disk without first calling
+  // create_agent_family. Anything less still errors (the caller likely forgot the id to overwrite).
   if (!familyId) {
+    const variants = Array.isArray(family.variants) ? (family.variants as unknown[]) : []
+    if (family.entryVariantKey && variants.length > 0) {
+      const created = await client.post(BASE, {
+        name: family.name,
+        slug: family.slug,
+        entryVariantKey: family.entryVariantKey,
+        base: family.base ?? {},
+        variants
+      })
+      return { ...(created as object), createdFrom: filePath ? resolve(filePath) : 'inline' }
+    }
     return {
       success: false,
-      error: 'familyId is required. Provide it explicitly or use a file exported with export_agent_family (contains _familyId).'
+      error:
+        'familyId is required to overwrite an existing family. To CREATE a new family, include entryVariantKey + at least one variant (plus name/slug).'
     }
-  }
-  if (!family) {
-    return { success: false, error: 'No family payload. Use filePath to point to a local JSON file, or provide family inline.' }
   }
 
   const result = await client.put(`${BASE}/${familyId}/import`, family)

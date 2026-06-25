@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { updateAgentHandler } from '../update_agent.js'
+import { updateAgentHandler, UPDATE_AGENT_TOOL } from '../update_agent.js'
 
 class MockClient {
   public methodCalls: any[] = []
@@ -31,5 +31,35 @@ describe('updateAgentHandler', () => {
 
     expect(client.methodCalls[0].path).toBe('/api/v1/mcp/agents/a1')
     expect(client.methodCalls[0].payload.requiresUserIdentity).toBe(true)
+  })
+
+  it('advertises endUserAuth in the inputSchema', () => {
+    const props = (UPDATE_AGENT_TOOL.inputSchema as any).properties
+    expect(props.endUserAuth).toBeDefined()
+    expect(props.endUserAuth.type).toBe('object')
+    // the key nested fields the assistant must know it can set
+    expect(props.endUserAuth.properties.mode).toBeDefined()
+    expect(props.endUserAuth.properties.jwksUrl).toBeDefined()
+    expect(props.endUserAuth.properties.sharedSecret).toBeDefined()
+    expect(props.endUserAuth.properties.issuer).toBeDefined()
+    expect(props.endUserAuth.properties.claims).toBeDefined()
+    // callback mode (delegated verification to the customer's https endpoint)
+    expect(props.endUserAuth.properties.mode.enum).toContain('callback')
+    expect(props.endUserAuth.properties.callbackUrl).toBeDefined()
+    expect(props.endUserAuth.properties.callbackCacheTtlSeconds).toBeDefined()
+  })
+
+  it('forwards endUserAuth in the update payload', async () => {
+    const client = new MockClient() as any
+    const endUserAuth = {
+      mode: 'jwt',
+      jwksUrl: 'https://idp.example.com/.well-known/jwks.json',
+      issuer: 'https://idp.example.com/',
+      claims: { userId: 'sub', role: 'role' }
+    }
+    await updateAgentHandler(client, { agentId: 'a1', endUserAuth })
+
+    expect(client.methodCalls[0].path).toBe('/api/v1/mcp/agents/a1')
+    expect(client.methodCalls[0].payload.endUserAuth).toEqual(endUserAuth)
   })
 })

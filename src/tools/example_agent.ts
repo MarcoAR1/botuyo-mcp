@@ -175,9 +175,25 @@ export async function exampleAgentHandler() {
       'You can have phone + text-only tools as long as your channelFlows.phone never reaches stages with those tools.',
 
     requiresUserIdentity: false,
-    _requiresUserIdentity_doc: 'Optional. Boolean (default false). SECURITY flag: when true, the agent requires a per-user identity ' +
-      'and is rejected on the anonymous web widget channel — it only runs on identity-bearing channels like Telegram. ' +
-      'Enable it for personal-assistant-style agents that read/write per-user data (Gmail, Calendar, tasks, etc.).',
+    _requiresUserIdentity_doc: 'Optional. Boolean (default false). SECURITY flag: when true, the agent requires a verified per-user identity. ' +
+      'On the web widget you must also set endUserAuth — the widget then verifies the end-user token against it (the anonymous reject becomes a verify). ' +
+      'Without endUserAuth the agent is rejected on the anonymous web widget channel and only runs on identity-bearing channels like Telegram. ' +
+      'Enable it for agents that read/write per-user data (Gmail, Calendar, tasks, banking, etc.).',
+
+    endUserAuth: {
+      mode: 'jwt',
+      jwksUrl: 'https://auth.miempresa.com/.well-known/jwks.json',
+      issuer: 'https://auth.miempresa.com/',
+      audience: 'botuyo-widget',
+      claims: { userId: 'sub', name: 'name', email: 'email', role: 'role' }
+    },
+    _endUserAuth_doc: 'Optional. Object. SECURITY: how BotUyo verifies the authenticated end-user for this agent (only used when requiresUserIdentity is true). ' +
+      'mode "jwt" (shown above) verifies the token locally — provide ONE key source: jwksUrl (preferred — RS256/ES256 with rotation), publicKey (static PEM), or sharedSecret (HS256, least preferred). ' +
+      'mode "callback" instead delegates verification to YOUR https endpoint (RFC 7662-style introspection): set callbackUrl (https + public host, anti-SSRF) and optionally callbackCacheTtlSeconds (default 60); BotUyo signs the request (verifiable via BotUyo\'s public JWKS) so no secret is shared. ' +
+      'The sharedSecret is WRITE-ONLY — it is never returned on export (you will see "sharedSecretSet": true instead). ' +
+      'issuer = expected "iss" (also namespaces the verified user id so ids never collide across IdPs/channels). audience = expected "aud". ' +
+      'claims maps your token claim names — userId defaults to "sub" and MUST map to a STABLE, non-reassignable claim (never email/username, which can be reassigned → identity hijack). ' +
+      'Tip: use the agent end-user-auth/test validator to verify a sample token before going live.',
 
     // ─── TOOL CONFIGURATIONS ────────────────────────────────────────
     toolConfigs: {

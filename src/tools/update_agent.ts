@@ -83,7 +83,31 @@ avatar3dUrl, cssVariables (object), darkCssVariables (object), animations (objec
       },
       requiresUserIdentity: {
         type: 'boolean',
-        description: 'SECURITY: whether this agent requires a per-user identity. When true, the agent is rejected on the anonymous web widget channel (no per-user identity there) and only runs on identity-bearing channels like Telegram. Default false. Enable it for personal-assistant-style agents that read/write per-user data.'
+        description: 'SECURITY: whether this agent requires a verified per-user identity. On the web widget, when true you MUST also set endUserAuth — the widget then verifies the end-user token against it (the old anonymous reject becomes a verify). On identity-bearing channels (e.g. Telegram) the channel identity is used. Without endUserAuth, the agent is rejected on the anonymous web widget channel. Default false. Enable it for agents that read/write per-user data.'
+      },
+      endUserAuth: {
+        type: 'object',
+        description: 'SECURITY: how BotUyo verifies the authenticated end-user for this agent (only used when requiresUserIdentity is true). mode "jwt" verifies the token locally (jwksUrl preferred — zero shared secret; or publicKey; or sharedSecret HS256). mode "callback" delegates verification to YOUR https endpoint (RFC 7662-style introspection; BotUyo signs the request, verifiable via BotUyo\'s public JWKS — no shared secret). The sharedSecret is WRITE-ONLY — it is never returned by get/export (you will see "sharedSecretSet": true instead). Same shape as the import_agent_json agentConfig.endUserAuth.',
+        properties: {
+          mode: { type: 'string', enum: ['jwt', 'callback'], description: 'Verification mode: "jwt" (verify the token locally) or "callback" (delegate to your https endpoint).' },
+          jwksUrl: { type: 'string', description: 'Preferred (RS256/ES256 with key rotation): the issuer JWKS endpoint URL.' },
+          publicKey: { type: 'string', description: 'Static PEM public key for RS256/ES256 (alternative to jwksUrl).' },
+          sharedSecret: { type: 'string', description: 'HS256 shared secret (least preferred). Write-only: never returned on get/export.' },
+          issuer: { type: 'string', description: 'Expected "iss" claim. Also used to namespace the verified userId so ids never collide across IdPs/channels.' },
+          audience: { type: 'string', description: 'Expected "aud" claim.' },
+          callbackUrl: { type: 'string', description: 'mode "callback": YOUR https endpoint that validates the token and returns { active|valid, userId|sub, name?, email?, role?, claims? }. Must be https + a public host (anti-SSRF).' },
+          callbackCacheTtlSeconds: { type: 'number', description: 'mode "callback": cache TTL in seconds for a verified result (default 60).' },
+          claims: {
+            type: 'object',
+            description: 'Maps your token claim names. userId MUST be a stable, non-reassignable claim (recommend "sub"); never use email/username.',
+            properties: {
+              userId: { type: 'string', description: 'Claim holding the stable user id (default "sub").' },
+              name: { type: 'string', description: 'Claim holding the display name.' },
+              email: { type: 'string', description: 'Claim holding the email.' },
+              role: { type: 'string', description: 'Claim holding the role (used for owner/member tool gating).' }
+            }
+          }
+        }
       }
     },
     required: ['agentId']

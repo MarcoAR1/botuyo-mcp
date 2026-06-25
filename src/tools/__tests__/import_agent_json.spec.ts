@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { importAgentJsonHandler } from '../import_agent_json.js'
+import { importAgentJsonHandler, IMPORT_AGENT_JSON_TOOL } from '../import_agent_json.js'
 
 class MockPutClient {
   public methodCalls: any[] = []
@@ -60,5 +60,30 @@ describe('importAgentJsonHandler', () => {
     expect(client.methodCalls[0].path).toBe('/api/v1/mcp/agent-families/fam1/import')
     expect(client.methodCalls[0].payload._meta).toBeUndefined()
     expect(client.methodCalls[0].payload.variants).toHaveLength(1)
+  })
+
+  it('advertises endUserAuth in the agentConfig schema', () => {
+    const agentConfigProps = (IMPORT_AGENT_JSON_TOOL.inputSchema as any).properties.agentConfig.properties
+    expect(agentConfigProps.endUserAuth).toBeDefined()
+    expect(agentConfigProps.endUserAuth.type).toBe('object')
+    expect(agentConfigProps.endUserAuth.properties.mode).toBeDefined()
+    expect(agentConfigProps.endUserAuth.properties.claims).toBeDefined()
+  })
+
+  it('round-trips endUserAuth through the import payload', async () => {
+    const client = new MockPutClient() as any
+    const endUserAuth = {
+      mode: 'jwt',
+      jwksUrl: 'https://idp.example.com/.well-known/jwks.json',
+      issuer: 'https://idp.example.com/',
+      claims: { userId: 'sub' }
+    }
+    await importAgentJsonHandler(client, {
+      agentId: 'a1',
+      agentConfig: { name: 'Auth Agent', identity: { language: 'es' }, requiresUserIdentity: true, endUserAuth }
+    })
+
+    expect(client.methodCalls[0].path).toBe('/api/v1/mcp/agents/a1/import')
+    expect(client.methodCalls[0].payload.agentConfig.endUserAuth).toEqual(endUserAuth)
   })
 })

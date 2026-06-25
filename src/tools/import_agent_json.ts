@@ -129,7 +129,31 @@ Requires role: owner, admin, or developer.`,
           channelPrompts: { type: 'object', description: 'Per-channel system prompt overrides: { channelName: "prompt text" }' },
           knowledgeDocumentIds: { type: 'array', items: { type: 'string' }, description: 'Knowledge base document IDs for RAG' },
           allowedOrigins: { type: 'array', items: { type: 'string' }, description: 'CORS allowed origins for web widget embedding' },
-          requiresUserIdentity: { type: 'boolean', description: 'SECURITY: when true, the agent is blocked on the anonymous web widget channel and only runs on identity-bearing channels (e.g. Telegram). Default false.' }
+          requiresUserIdentity: { type: 'boolean', description: 'SECURITY: when true, the agent requires a verified per-user identity. On web, set endUserAuth too so the widget verifies the end-user token (else the agent is rejected on the anonymous web widget channel). Identity-bearing channels (e.g. Telegram) use the channel identity. Default false.' },
+          endUserAuth: {
+            type: 'object',
+            description: 'SECURITY: end-user identity verification config (used when requiresUserIdentity is true). mode "jwt" verifies the presented JWT locally (jwksUrl preferred — zero shared secret; or publicKey; or sharedSecret HS256). mode "callback" delegates verification to YOUR https endpoint (RFC 7662-style introspection; BotUyo signs the request, verifiable via BotUyo\'s public JWKS — no shared secret). sharedSecret is write-only — never returned on export (shown as "sharedSecretSet": true). Same shape as the update_agent endUserAuth.',
+            properties: {
+              mode: { type: 'string', enum: ['jwt', 'callback'], description: 'Verification mode: "jwt" (verify the token locally) or "callback" (delegate to your https endpoint).' },
+              jwksUrl: { type: 'string', description: 'Preferred (RS256/ES256 with key rotation): the issuer JWKS endpoint URL.' },
+              publicKey: { type: 'string', description: 'Static PEM public key for RS256/ES256.' },
+              sharedSecret: { type: 'string', description: 'HS256 shared secret (least preferred). Write-only: never returned on export.' },
+              issuer: { type: 'string', description: 'Expected "iss" claim. Also namespaces the verified userId (collision-safe across IdPs/channels).' },
+              audience: { type: 'string', description: 'Expected "aud" claim.' },
+              callbackUrl: { type: 'string', description: 'mode "callback": YOUR https endpoint that validates the token and returns { active|valid, userId|sub, name?, email?, role?, claims? }. Must be https + a public host (anti-SSRF).' },
+              callbackCacheTtlSeconds: { type: 'number', description: 'mode "callback": cache TTL in seconds for a verified result (default 60).' },
+              claims: {
+                type: 'object',
+                description: 'Maps your token claim names. userId MUST be a stable, non-reassignable claim (recommend "sub").',
+                properties: {
+                  userId: { type: 'string', description: 'Claim holding the stable user id (default "sub").' },
+                  name: { type: 'string', description: 'Claim holding the display name.' },
+                  email: { type: 'string', description: 'Claim holding the email.' },
+                  role: { type: 'string', description: 'Claim holding the role.' }
+                }
+              }
+            }
+          }
         },
         required: ['name', 'identity']
       }

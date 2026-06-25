@@ -337,7 +337,44 @@ describe('agent family tools — export / import', () => {
     expect(res.importedFrom).toBe(famDir)
   })
 
-  it('import errors when neither familyId nor _familyId is available', async () => {
+  it('import (folder) with NO familyId + variants present → CREATES via POST /agent-families', async () => {
+    const dir = makeTmpDir()
+    const famDir = join(dir, 'recruiting-copilot')
+    mkdirSync(join(famDir, 'variants'), { recursive: true })
+    writeFileSync(
+      join(famDir, 'family.json'),
+      JSON.stringify({
+        // NOTE: _meta carries NO familyId — this is a hand-authored, never-yet-created agent folder
+        _meta: { schema: 'botuyo.agent/v1', slug: 'recruiting-copilot' },
+        name: 'Copiloto de Reclutamiento',
+        slug: 'recruiting-copilot',
+        entryVariantKey: 'default',
+        base: { requiresUserIdentity: true }
+      }),
+      'utf-8'
+    )
+    writeFileSync(
+      join(famDir, 'variants', 'default.json'),
+      JSON.stringify({ key: 'default', label: 'Default', overrides: {}, order: 0 }),
+      'utf-8'
+    )
+
+    const client = new MockClient() as any
+    const res = (await importAgentFamilyHandler(client, { filePath: famDir })) as any
+    // CREATE (POST BASE), not overwrite (PUT /:id/import)
+    expect(client.calls[0].method).toBe('post')
+    expect(client.calls[0].path).toBe(BASE)
+    expect(client.calls[0].payload).toMatchObject({
+      name: 'Copiloto de Reclutamiento',
+      slug: 'recruiting-copilot',
+      entryVariantKey: 'default'
+    })
+    expect(client.calls[0].payload.variants).toHaveLength(1)
+    expect(res.createdFrom).toBe(famDir)
+    expect(client.calls.some((c: Call) => c.method === 'put')).toBe(false)
+  })
+
+  it('import errors when neither familyId nor _familyId is available (and not enough to create)', async () => {
     const client = new MockClient() as any
     const res = (await importAgentFamilyHandler(client, {
       family: { entryVariantKey: 'k', base: {}, variants: [] }
@@ -345,5 +382,6 @@ describe('agent family tools — export / import', () => {
     expect(res.success).toBe(false)
     expect(res.error).toMatch(/familyId is required/i)
     expect(client.calls.some((c: Call) => c.method === 'put')).toBe(false)
+    expect(client.calls.some((c: Call) => c.method === 'post')).toBe(false)
   })
 })

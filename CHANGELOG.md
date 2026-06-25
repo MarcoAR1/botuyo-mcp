@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-06-25
+### Added
+- **`endUserAuth` now documents `callback` mode across the agent tools** (`import_agent_json`, `update_agent`, `example_agent`): besides local `jwt` verification (jwksUrl / publicKey / sharedSecret), an agent can delegate end-user verification to the customer's https endpoint via `callbackUrl` (+ optional `callbackCacheTtlSeconds`) — RFC 7662-style introspection where BotUyo signs the request (verifiable via BotUyo's public JWKS) so no secret is shared in either direction. `sharedSecret` stays write-only (returned as `sharedSecretSet`). Spec coverage added for the callback fields in `update_agent.spec.ts` and the dual-mode doc in `example_agent.spec.ts`.
+- **`import_agent_family` can CREATE a new family from a folder/payload:** when no `familyId` is resolved (no arg, no `_meta.familyId`) and the payload carries `entryVariantKey` + at least one variant, it POSTs a brand-new family (`createdFrom`) instead of erroring — letting a committed agent folder be authored straight from disk. Anything less still errors. Covered in `agent_families.spec.ts`.
+
 ## [0.5.0] — 2026-06-20
 ### Changed
 - **`export_agent_family` now writes a readable FOLDER instead of one big file:** `{savePath}/{slug}/family.json` (name, slug, entryVariantKey, base + metadata) plus one `variants/{key}.json` per variant. Smaller files, cleaner diffs, easier hand-editing.
