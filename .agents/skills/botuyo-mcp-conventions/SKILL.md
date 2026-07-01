@@ -13,6 +13,19 @@ description: Comprehensive architecture, structure, conventions, tool patterns, 
 
 ---
 
+## RULE 0: Scope — Exclusive Responsibility (DO NOT MIX)
+
+`@botuyo/mcp` exists **SOLELY to build and configure conversational AGENTS**
+(agents, families, stages, tools, knowledge, avatars, templates, publishing).
+
+- **NEVER add Recruiting tooling here** (org profile, vacancy templates, presets,
+  pipelines, candidates, reports, etc.). Recruiting is a **separate, isolated
+  product** with its own auth/tenant model.
+- ALL conversational configuration of the Recruiting product is owned by the
+  **Recruiting copiloto**, NOT by this agent-building MCP.
+- Do NOT create `configure_recruiting_*`, `create_vacancy_template`,
+  `apply_recruiting_preset` or any recruiting tool/command in this repo.
+
 ## RULE 1: Project Architecture
 
 ```

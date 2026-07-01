@@ -1,5 +1,16 @@
 /**
  * MCP Tools Registry — exports ALL_TOOLS and TOOL_HANDLERS
+ *
+ * ⚠️ SCOPE — EXCLUSIVE RESPONSIBILITY (do not mix):
+ * `@botuyo/mcp` exists SOLELY to build and configure conversational AGENTS
+ * (agents, families, stages, tools, knowledge, avatars, templates, publishing).
+ *
+ * It MUST NOT contain Recruiting tooling (org profile, vacancy templates,
+ * presets, pipelines, candidates, reports, etc.). The Recruiting product is a
+ * separate, isolated domain with its own auth/tenant model, and ALL of its
+ * conversational configuration is owned by the Recruiting **copiloto** — never
+ * by this agent-building MCP. Do NOT add `configure_recruiting_*`,
+ * `create_vacancy_template`, `apply_recruiting_preset` or any recruiting tool here.
  */
 
 import type { Tool } from '@modelcontextprotocol/sdk/types.js'
