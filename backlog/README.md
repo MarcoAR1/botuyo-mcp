@@ -23,9 +23,11 @@ Audit of the MCP server / CLI (`@botuyo/mcp`). Generated Jun 2026.
 
 | Pri | Count | Headline |
 |-----|-------|----------|
-| P1 | 1 | `verify()` + `uploadMedia()` skip retry/HTML-block handling (the startup path that fails under Netskope) |
-| P2 | 2 | `handleResponse` vs `parseJson` duplication; no auto-detect of `netskope-ca.pem` |
+| P1 | 0 | (none open) |
+| P2 | 0 | (none open) |
 | P3 | 3 | `any` defaults; dead `tenantName` from `verify()`; `get_agent` lacks a name-first summary |
+
+> **Removed 2026-07:** the Netskope-block cluster (former MCP-P1-1 retry/HTML-block, MCP-P2-1 parser dedup, MCP-P2-2 CA auto-detect) was dropped — those addressed a local corporate-proxy environment, not a product-facing issue.
 
 ## Method & confidence
 
