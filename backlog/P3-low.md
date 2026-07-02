@@ -22,4 +22,5 @@
 - **Location:** `src/tools/get_agent.ts` (and the agent tools that return raw `agentConfig`)
 - **Problem:** `list_agents` surfaces a readable `text` summary, but `get_agent` returns the raw API body, and the nesting (`identity`/`enabledTools`/`stages`/`voice` live **under `agentConfig`**, not top-level) is undocumented in the tool description — easy for an AI caller to mis-navigate.
 - **Fix:** Add a short name-first `text` summary (reuse `format.shortId`) and document the `agentConfig` nesting in the tool description.
-- **Confidence:** Med — **(verify)** by reading `src/tools/get_agent.ts`. **Effort:** S.
+- **Verified 2026-07:** `get_agent.ts:18` returns `client.get(...)` raw (no `text`, no `shortId`), whereas `list_agents.ts:15-22` builds a name-first `text` via `shortId` — the asymmetry is real. The `get_agent` description (line 6) also never states the fields live under `agentConfig`.
+- **Confidence:** High (confirmed in source). **Effort:** S.
