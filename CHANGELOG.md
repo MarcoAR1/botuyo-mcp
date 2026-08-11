@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] — 2026-08-11
+### Changed
+- Maintenance release to re-publish the package and trigger a coordinated redeploy across all botuyo repos. No functional changes.
+
 ## [0.7.0] — 2026-06-25
 ### Added
 - **`endUserAuth` now documents `callback` mode across the agent tools** (`import_agent_json`, `update_agent`, `example_agent`): besides local `jwt` verification (jwksUrl / publicKey / sharedSecret), an agent can delegate end-user verification to the customer's https endpoint via `callbackUrl` (+ optional `callbackCacheTtlSeconds`) — RFC 7662-style introspection where BotUyo signs the request (verifiable via BotUyo's public JWKS) so no secret is shared in either direction. `sharedSecret` stays write-only (returned as `sharedSecretSet`). Spec coverage added for the callback fields in `update_agent.spec.ts` and the dual-mode doc in `example_agent.spec.ts`.
