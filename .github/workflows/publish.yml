@@ -65,20 +65,18 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
-      # NOTE: use the npm bundled with Node 22 (>=10, supports provenance). Do NOT `npm i -g
-      # npm@latest` — npm@12 requires Node ^22.22.2/^24.15.0/>=26 and broke this job (EBADENGINE).
+      # OIDC trusted publishing (same flow as botuyo-widget-chatbot): no NPM token. Requires npm
+      # >= 11.5 (bundled with Node 24 or via npm@latest) + `id-token: write` (see permissions) +
+      # a Trusted Publisher configured for @botuyo/mcp on npmjs.org pointing to this repo/workflow.
+      - name: Ensure latest npm (OIDC trusted publishing needs npm >= 11.5)
+        run: npm install -g npm@latest
 
       - name: Build + Publish
         shell: bash
         timeout-minutes: 10
-        env:
-          # setup-node's registry .npmrc reads this for auth. Without it `npm publish` is
-          # unauthenticated and npm returns E404 on PUT. Requires the NPM_TOKEN repo secret
-          # (npm automation/granular token with publish access to the @botuyo scope).
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           npm install
           npm run build
