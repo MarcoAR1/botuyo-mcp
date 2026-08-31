@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.3] — 2026-08-31
+### Fixed
+- **CI publish workflow**: use Node 22 (matches `.nvmrc`) and drop `npm install -g npm@latest`. npm@12 requires Node `^22.22.2 || ^24.15.0 || >=26` and broke the publish job on Node 20 (`EBADENGINE`). The npm bundled with Node 22 (>=10) is used instead (supports provenance). Ships the 0.7.2 changes below (0.7.2 never published due to this failure).
+
 ## [0.7.2] — 2026-08-31
 ### Changed
 - **Knowledge + avatar tools now call the MCP namespace** (RULE 7): `ingest_knowledge_url`, `list_knowledge_docs`, `delete_knowledge_doc` → `/api/v1/mcp/knowledge/*`; `configure_avatar` → `/api/v1/mcp/avatars/*` (previously the raw `/api/knowledge` and `/api/avatars` endpoints). **Requires botuyo-backend >= 2.5.8**, which adds the mirror endpoints (`McpKnowledgeController`/`McpAvatarController`) with proper write-gating. Specs updated.

@@ -65,11 +65,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Ensure latest npm
-        run: npm install -g npm@latest
+      # NOTE: use the npm bundled with Node 22 (>=10, supports provenance). Do NOT `npm i -g
+      # npm@latest` — npm@12 requires Node ^22.22.2/^24.15.0/>=26 and broke this job (EBADENGINE).
 
       - name: Build + Publish
         shell: bash
