@@ -16,5 +16,5 @@ export const DELETE_KNOWLEDGE_DOC_TOOL: Tool = {
 export async function deleteKnowledgeDocHandler(client: BotuyoApiClient, args: Record<string, unknown>) {
   const documentId = args.documentId as string
   if (!documentId) throw new Error('documentId is required')
-  return client.delete(`/api/knowledge/documents/${documentId}`)
+  return client.delete(`/api/v1/mcp/knowledge/documents/${documentId}`)
 }

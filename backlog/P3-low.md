@@ -1,6 +1,10 @@
 # P3 — Low / cleanup
 
-## MCP-P3-1 — `any` defaults weaken the public client types
+> **Status (v0.7.2):** MCP-P3-2 and MCP-P3-3 RESOLVED. MCP-P3-1 PARTIAL — the JWT `roles`
+> array is now typed in `verify()`; the `get<T = any>`/parser generics are still open (the
+> `T = unknown` switch ripples into every tool handler + spec, deferred to a dedicated pass).
+
+## MCP-P3-1 — `any` defaults weaken the public client types (PARTIAL)
 
 - **Category:** typing / tech debt
 - **Location:** `src/client.ts` — `get<T = any>`, `post<T = any>`, etc.; `role: user.roles?.find((r: any) => …)`; `json: any` in parsers.
@@ -8,7 +12,7 @@
 - **Fix:** Default generics to `unknown` (force tools to assert), or introduce a minimal `ApiEnvelope<T> = { success: boolean; data?: T; error?: string }`. Type the `roles` array (`{ tenantId: string; role: string }[]`).
 - **Confidence:** High. **Effort:** M (ripples into tool handlers + specs).
 
-## MCP-P3-2 — `verify()` returns a permanently-empty `tenantName`
+## MCP-P3-2 — `verify()` returns a permanently-empty `tenantName` ✅ RESOLVED (v0.7.2)
 
 - **Category:** dead field / inconsistency
 - **Location:** `src/client.ts:71` — `tenantName: ''  // Will be enriched from credentials`
@@ -16,7 +20,7 @@
 - **Fix:** Either drop `tenantName` from the `verify()` result (callers already read creds), or have `verify()` resolve it via `GET /api/tenant/:id` (the singular tenant-name endpoint). Prefer dropping it to keep `client.ts` a pure HTTP layer (RULE 4).
 - **Confidence:** High. **Effort:** XS.
 
-## MCP-P3-3 — `get_agent` returns raw body, no name-first summary
+## MCP-P3-3 — `get_agent` returns raw body, no name-first summary ✅ RESOLVED (v0.7.2)
 
 - **Category:** UX / docs
 - **Location:** `src/tools/get_agent.ts` (and the agent tools that return raw `agentConfig`)

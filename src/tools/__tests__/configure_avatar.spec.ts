@@ -26,7 +26,7 @@ class MockClient {
 describe('listAvatarsHandler', () => {
   it('should return formatted catalog text', async () => {
     const client = new MockClient()
-      .mockGet('/api/avatars/catalog', {
+      .mockGet('/api/v1/mcp/avatars/catalog', {
         success: true,
         data: [
           { _id: 'av1', name: 'Corporate F', modelFormat: 'vrm', category: 'corporate', modelUrl: 'https://r2/av1.vrm' },
@@ -44,7 +44,7 @@ describe('listAvatarsHandler', () => {
 
   it('should handle empty catalog', async () => {
     const client = new MockClient()
-      .mockGet('/api/avatars/catalog', { success: true, data: [] })
+      .mockGet('/api/v1/mcp/avatars/catalog', { success: true, data: [] })
 
     const result = await listAvatarsHandler(client as any, {})
     expect((result as any).text).toContain('No hay avatares')
@@ -52,7 +52,7 @@ describe('listAvatarsHandler', () => {
 
   it('should throw on API failure', async () => {
     const client = new MockClient()
-      .mockGet('/api/avatars/catalog', { success: false })
+      .mockGet('/api/v1/mcp/avatars/catalog', { success: false })
 
     await expect(listAvatarsHandler(client as any, {})).rejects.toThrow('Could not fetch')
   })
@@ -61,8 +61,8 @@ describe('listAvatarsHandler', () => {
 describe('selectAvatarHandler', () => {
   it('should select from catalog by avatarId', async () => {
     const client = new MockClient()
-      .mockGet('/api/avatars/catalog/av1', { success: true, data: { modelUrl: 'https://r2/av1.vrm' } })
-      .mockPost('/api/avatars/select', { success: true, message: 'Avatar updated' })
+      .mockGet('/api/v1/mcp/avatars/catalog/av1', { success: true, data: { modelUrl: 'https://r2/av1.vrm' } })
+      .mockPost('/api/v1/mcp/avatars/select', { success: true, message: 'Avatar updated' })
 
     const result = await selectAvatarHandler(client as any, { agentId: 'agent_1', avatarId: 'av1' })
     const text = (result as any).text
@@ -74,7 +74,7 @@ describe('selectAvatarHandler', () => {
 
   it('should select by custom URL', async () => {
     const client = new MockClient()
-      .mockPost('/api/avatars/select', { success: true, message: 'Avatar updated' })
+      .mockPost('/api/v1/mcp/avatars/select', { success: true, message: 'Avatar updated' })
 
     const result = await selectAvatarHandler(client as any, { agentId: 'agent_1', avatarUrl: 'https://my.site/avatar.glb' })
     const text = (result as any).text
@@ -100,7 +100,7 @@ describe('selectAvatarHandler', () => {
 
   it('should throw when catalog avatar not found', async () => {
     const client = new MockClient()
-      .mockGet('/api/avatars/catalog/missing', { success: false })
+      .mockGet('/api/v1/mcp/avatars/catalog/missing', { success: false })
 
     await expect(selectAvatarHandler(client as any, { agentId: 'a1', avatarId: 'missing' }))
       .rejects.toThrow('not found in catalog')

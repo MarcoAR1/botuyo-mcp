@@ -26,7 +26,7 @@ export const SELECT_AVATAR_TOOL: Tool = {
 }
 
 export async function listAvatarsHandler(client: BotuyoApiClient, _args: Record<string, unknown>) {
-  const result = await client.get('/api/avatars/catalog')
+  const result = await client.get('/api/v1/mcp/avatars/catalog')
   if (!result || !result.success || !result.data) {
     throw new Error('Could not fetch avatar catalog')
   }
@@ -72,7 +72,7 @@ export async function selectAvatarHandler(client: BotuyoApiClient, args: Record<
 
   // If avatarId provided, look up from catalog
   if (avatarId) {
-    const catalogResult = await client.get(`/api/avatars/catalog/${avatarId}`)
+    const catalogResult = await client.get(`/api/v1/mcp/avatars/catalog/${avatarId}`)
     if (!catalogResult || !catalogResult.success || !catalogResult.data) {
       throw new Error(`Avatar "${avatarId}" not found in catalog. Use list_avatars to see available options.`)
     }
@@ -83,7 +83,7 @@ export async function selectAvatarHandler(client: BotuyoApiClient, args: Record<
   }
 
   // Select the avatar for the agent
-  const result = await client.post('/api/avatars/select', {
+  const result = await client.post('/api/v1/mcp/avatars/select', {
     agentId,
     avatarUrl: finalUrl
   })

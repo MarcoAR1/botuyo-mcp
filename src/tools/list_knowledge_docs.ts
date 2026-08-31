@@ -19,5 +19,5 @@ export async function listKnowledgeDocsHandler(client: BotuyoApiClient, args: Re
   if (args.limit) params.append('limit', String(args.limit))
   if (args.offset) params.append('offset', String(args.offset))
   const query = params.toString() ? `?${params.toString()}` : ''
-  return client.get(`/api/knowledge/documents${query}`)
+  return client.get(`/api/v1/mcp/knowledge/documents${query}`)
 }

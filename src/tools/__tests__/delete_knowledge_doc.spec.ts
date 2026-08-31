@@ -13,6 +13,6 @@ describe('deleteKnowledgeDocHandler', () => {
   it('should DELETE document by ID', async () => {
     const client = new MockDeleteClient() as any
     await deleteKnowledgeDocHandler(client, { documentId: 'doc123' })
-    expect(client.path).toBe('/api/knowledge/documents/doc123')
+    expect(client.path).toBe('/api/v1/mcp/knowledge/documents/doc123')
   })
 })

@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.2] — 2026-08-31
+### Changed
+- **Knowledge + avatar tools now call the MCP namespace** (RULE 7): `ingest_knowledge_url`, `list_knowledge_docs`, `delete_knowledge_doc` → `/api/v1/mcp/knowledge/*`; `configure_avatar` → `/api/v1/mcp/avatars/*` (previously the raw `/api/knowledge` and `/api/avatars` endpoints). **Requires botuyo-backend >= 2.5.8**, which adds the mirror endpoints (`McpKnowledgeController`/`McpAvatarController`) with proper write-gating. Specs updated.
+- **`verify()` no longer returns a permanently-empty `tenantName`** (MCP-P3-2): `AuthInfo` drops the dead field — the human-readable name is read from `~/.botuyo/credentials.json` by callers. The JWT `roles` array is now typed (partial MCP-P3-1).
+- **`get_agent` returns a name-first `text` summary** and its description now documents that the editable config lives under `data.agentConfig` (MCP-P3-3).
+
 ## [0.7.1] — 2026-08-11
 ### Changed
 - Maintenance release to re-publish the package and trigger a coordinated redeploy across all botuyo repos. No functional changes.

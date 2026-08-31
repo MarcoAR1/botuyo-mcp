@@ -24,7 +24,6 @@ export interface BotuyoClientConfig {
 
 export interface AuthInfo {
   tenantId: string
-  tenantName: string
   role: string
   email: string
 }
@@ -66,10 +65,12 @@ export class BotuyoApiClient {
     const user = body.data.user
     // Use activeTenantId (from switch_tenant) if set, otherwise fall back to first tenant
     const resolvedTenantId = this.activeTenantId || user.tenantIds?.[0] || ''
+    const roles = (user.roles ?? []) as Array<{ tenantId?: string; role?: string }>
     this.authInfo = {
       tenantId: resolvedTenantId,
-      tenantName: '', // Will be enriched from credentials
-      role: user.roles?.find((r: any) => r.tenantId === resolvedTenantId)?.role || user.roles?.[0]?.role || 'member',
+      // tenantName intentionally omitted — the human-readable name is read from
+      // ~/.botuyo/credentials.json by callers; verify() stays a pure identity check.
+      role: roles.find((r) => r.tenantId === resolvedTenantId)?.role || roles[0]?.role || 'member',
       email: user.email
     }
 

@@ -31,5 +31,5 @@ export async function ingestKnowledgeUrlHandler(client: BotuyoApiClient, args: R
   if (args.tags) body.tags = args.tags
   if (args.topic) body.topic = args.topic
 
-  return client.post('/api/knowledge/urls', body)
+  return client.post('/api/v1/mcp/knowledge/urls', body)
 }
