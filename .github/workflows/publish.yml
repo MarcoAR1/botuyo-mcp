@@ -74,6 +74,11 @@ jobs:
       - name: Build + Publish
         shell: bash
         timeout-minutes: 10
+        env:
+          # setup-node's registry .npmrc reads this for auth. Without it `npm publish` is
+          # unauthenticated and npm returns E404 on PUT. Requires the NPM_TOKEN repo secret
+          # (npm automation/granular token with publish access to the @botuyo scope).
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           npm install
           npm run build
