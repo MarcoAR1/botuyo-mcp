@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.4] — 2026-08-31
+### Fixed
+- **CI publish auth**: the publish step now passes `NODE_AUTH_TOKEN` (from the `NPM_TOKEN` secret) so `npm publish` is authenticated — it was failing with `E404 Not Found` on PUT because setup-node's `.npmrc` had no token. Ships everything from 0.7.2/0.7.3 (which never published).
+
 ## [0.7.3] — 2026-08-31
 ### Fixed
 - **CI publish workflow**: use Node 22 (matches `.nvmrc`) and drop `npm install -g npm@latest`. npm@12 requires Node `^22.22.2 || ^24.15.0 || >=26` and broke the publish job on Node 20 (`EBADENGINE`). The npm bundled with Node 22 (>=10) is used instead (supports provenance). Ships the 0.7.2 changes below (0.7.2 never published due to this failure).
