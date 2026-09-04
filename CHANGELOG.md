@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.6] — 2026-09-04
+### Fixed
+- **MCP server advertised a stale hardcoded version (`0.3.0`)** to clients — it now reads the real version from `package.json` at startup, so `initialize` reports the published version.
+- **Docs count corrected to 42 tools** (was 41): `audit_agent_family` (read-only family config audit, shipped in 0.6.0) is now documented in the README tool list.
+- **`auth.ts` header comment** referenced `admin.botuyo.com/mcp-auth`; corrected to `${BOTUYO_ADMIN_URL}/mcp-auth` (default `https://botuyo.com`) to match the actual code.
+
+### Added
+- **Test coverage for `ingest_knowledge_url` and `upload_agent_media`** — the two tools that were missing a `.spec.ts` (RULE 8 / TDD compliance). No behaviour change.
+
+### Changed
+- **`conventions.md`**: fixed the tool name `list_base_tools` → `get_tools_catalog`, completed the Tool Categories list (42 tools, real names), and rewrote the Publish Workflow to describe the GitHub Actions OIDC trusted-publishing flow (the manual `npm publish` / `deploy.ps1` path is now documented as the fallback).
+
 ## [0.7.4] — 2026-08-31
 ### Fixed
 - **CI publish auth**: the publish step now passes `NODE_AUTH_TOKEN` (from the `NPM_TOKEN` secret) so `npm publish` is authenticated — it was failing with `E404 Not Found` on PUT because setup-node's `.npmrc` had no token. Ships everything from 0.7.2/0.7.3 (which never published).

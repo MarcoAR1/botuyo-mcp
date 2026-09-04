@@ -74,7 +74,9 @@ The server resolves your JWT from `BOTUYO_TOKEN`, falling back to `~/.botuyo/cre
 
 ## Available tools
 
-The server exposes **41 tools**. Read tools (`list_*`, `get_*`, `export_*`) need `viewer+`; write/publish tools need `developer+` (see [Roles](#roles)).
+The server exposes **42 tools**. Read tools (`list_*`, `get_*`, `export_*`, `audit_*`) need `viewer+`; write/publish tools need `developer+` (see [Roles](#roles)).
+
+> **For AI assistants / IDE agents:** every tool is self-describing — its `inputSchema` lists the exact arguments (with `required`) and its `description` states role requirements and side effects. Discover the live catalog with the MCP `tools/list` request; you never need to hardcode tool names. A typical build flow is `create_agent` → `update_agent` (identity/voice) → `upsert_stage` (conversation graph) → `update_enabled_tools` / `configure_agent_tool` (capabilities) → `publish_agent`. Use `example_agent` to see a fully documented reference config, and `audit_agent_family` to validate before publishing.
 
 ### Agents
 
@@ -105,7 +107,8 @@ A **family** is one logical agent with a shared `base` config plus multiple `var
 | `publish_agent_family` | Publish the family and all its member agents |
 | `delete_agent_family` | Delete a family and all its agents (irreversible; requires confirmation) |
 | `export_agent_family` | Export a portable family JSON (base + variants) to a local file |
-| `import_agent_family` | Replace a family's base + variants from JSON (full replace) |
+| `import_agent_family` | Replace a family's base + variants from JSON (full replace), or create a new family from a folder/payload |
+| `audit_agent_family` | Read-only config-quality audit of one family (`familyId`) or all families in the tenant — flags invalid/non-canonical voices, over-long `customInstructions`, non-URL avatars, deprecated AI models; changes nothing |
 
 ### Conversation flow
 

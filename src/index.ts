@@ -23,9 +23,25 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { BotuyoApiClient, ApiError } from './client.js'
 import { ALL_TOOLS, TOOL_HANDLERS } from './tools/index.js'
 import { resolveToken, readCredentials, clearCredentials, isTokenExpired, resolveApiUrl } from './commands/credentials.js'
-import { watch, existsSync, mkdirSync } from 'fs'
-import { join } from 'path'
+import { watch, existsSync, mkdirSync, readFileSync } from 'fs'
+import { join, dirname } from 'path'
 import { homedir } from 'os'
+import { fileURLToPath } from 'url'
+
+/**
+ * Resolve the real package version from package.json (shipped at the package
+ * root = dist/../package.json) so the MCP server advertises the published
+ * version to clients instead of a hardcoded literal that silently drifts.
+ */
+function resolvePackageVersion(): string {
+  try {
+    const here = dirname(fileURLToPath(import.meta.url))
+    const pkg = JSON.parse(readFileSync(join(here, '..', 'package.json'), 'utf8'))
+    return typeof pkg.version === 'string' ? pkg.version : '0.0.0'
+  } catch {
+    return '0.0.0'
+  }
+}
 
 // ─── Sub-command routing ──────────────────────────────────────────────────────
 
@@ -173,7 +189,7 @@ async function startMcpServer() {
 
   // ── MCP Server — starts ALWAYS, even without valid auth ────────────────
   const server = new Server(
-    { name: 'botuyo-mcp', version: '0.3.0' },
+    { name: 'botuyo-mcp', version: resolvePackageVersion() },
     { capabilities: { tools: {} } }
   )
 

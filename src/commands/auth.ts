@@ -6,7 +6,7 @@
  *
  * Flow:
  * 1. Starts a local HTTP server on a random port
- * 2. Opens admin.botuyo.com/mcp-auth?redirect=http://localhost:PORT
+ * 2. Opens ${BOTUYO_ADMIN_URL}/mcp-auth?redirect=http://localhost:PORT (default https://botuyo.com)
  * 3. The admin panel authenticates the user (login/Google),
  *    calls POST /api/v1/mcp/oauth/authorize, then redirects to localhost with ?code=...
  * 4. CLI exchanges the code for a JWT directly (POST /api/v1/mcp/oauth/token)

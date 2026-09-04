@@ -61,20 +61,35 @@ case 'my-command': {
 
 ## Publish Workflow
 
+Publishing is **automated via GitHub Actions** (`.github/workflows/publish.yml`) using
+**OIDC Trusted Publishing** — no `NPM_TOKEN` secret. The flow mirrors `botuyo-widget-chatbot`.
+
 ```bash
 # 1. Ensure everything builds and tests pass
 npm run build
 npm run test
 
-# 2. Bump version in package.json
-# 3. Publish to npm
-npm publish --access public
+# 2. Bump version + add the CHANGELOG entry in the SAME commit
+npm version patch   # edits package.json + package-lock.json, commits, tags
 
-# 4. The prepublishOnly script runs build automatically
+# 3. Push to main — the workflow triggers on changes to package.json
+git push origin main --follow-tags
 ```
 
+On push to `main` (path filter `package.json`), the workflow builds, compares the local
+version against the published one, and runs `npm publish --access public` **with signed
+provenance** via OIDC. If the version already exists, the publish is skipped (idempotent).
+
+- **Trusted Publisher** must be configured once on npmjs.org for `@botuyo/mcp`
+  (repo `MarcoAR1/botuyo-mcp`, workflow `publish.yml`).
+- **Manual fallback:** `npm publish --access public` from a machine with npm registry
+  access and `npm login` (the `prepublishOnly` script runs the build automatically).
+  Note: corporate proxies (Netskope) may block both `npm publish` and `git push` over
+  HTTPS — prefer the CI path.
+- `deploy.ps1` is a legacy Windows helper; the CI workflow is the source of truth.
+
 ### Version Bumping
-- **Patch** (0.3.x): Bug fixes, tool description improvements
+- **Patch** (0.x.y): Bug fixes, tool/description doc improvements
 - **Minor** (0.x.0): New tools, new CLI commands
 - **Major** (x.0.0): Breaking changes to tool schemas or client API
 
@@ -105,43 +120,66 @@ The `client.ts` `parseJson()` method handles both cases. Tool handlers receive t
 
 ## Tool Categories
 
-### Agent CRUD
-- `list_agents` — GET all agents for tenant
-- `get_agent` — GET single agent by ID
+> **42 tools total.** The MCP tool `name` is the source of truth — note that some
+> file names differ from the exposed name (e.g. `list_base_tools.ts` → `get_tools_catalog`,
+> `list_knowledge_docs.ts` → `list_knowledge_documents`, `delete_knowledge_doc.ts` →
+> `delete_knowledge_document`, `associate_knowledge.ts` → `associate_knowledge_to_agent`).
+
+### Agent CRUD (8)
+- `list_agents` — GET all agents for tenant (tags AgentFamily members)
+- `get_agent` — GET single agent by ID (editable config under `data.agentConfig`)
+- `get_agent_status` — GET channel connection status + admin link
 - `create_agent` — POST new agent (draft status)
-- `update_agent` — PUT agent fields (identity, config)
-- `delete_agent` — DELETE agent (with confirmation)
-- `get_agent_status` — GET agent publish status
+- `update_agent` — PUT agent identity/config (merge semantics)
+- `delete_agent` — DELETE agent (name-confirmation required)
+- `publish_agent` — POST publish/unpublish (draft ↔ live)
+- `example_agent` — Returns a documented example config (no API call)
 
-### Flow / Stages
-- `upsert_stage` — PUT stage config (merge semantics for stages, replace for connections)
+### Flow / Stages (1)
+- `upsert_stage` — PUT stage config (merge for stages, replace for connections)
 
-### Tools Configuration
-- `list_available_tools` — GET tools available for the tenant
-- `list_base_tools` — GET base tool definitions
+### Tools Configuration (7)
+- `list_available_tools` — GET tools available for the tenant (core + custom)
+- `get_tools_catalog` — GET full tool catalog with metadata (file: `list_base_tools.ts`)
 - `update_enabled_tools` — PUT enabled tools list
-- `configure_agent_tool` — PUT tool-specific config
+- `configure_agent_tool` — PUT tool-specific config (single or multi-instance)
 - `list_tool_configs` — GET all tool configs for agent
 - `get_tool_config` — GET single tool config
 - `remove_tool_config` — DELETE tool config
 
-### Knowledge Base
+### Knowledge Base (4)
 - `list_knowledge_documents` — GET knowledge docs
-- `delete_knowledge_document` — DELETE knowledge doc
-- `associate_knowledge_to_agent` — POST associate doc to agent
+- `ingest_knowledge_url` — POST a URL to scrape + index
+- `associate_knowledge_to_agent` — POST associate doc(s) to agent
+- `delete_knowledge_document` — DELETE knowledge doc + chunks
 
-### Templates & Import/Export
-- `list_templates` — GET available templates
+### Templates & Import/Export (4)
+- `list_templates` — GET available templates by industry
 - `create_from_template` — POST create agent from template
-- `example_agent` — Returns example agent JSON (no API call)
 - `export_agent_json` — GET agent as portable JSON
-- `import_agent_json` — POST import agent from JSON
+- `import_agent_json` — POST full-replace agent config from JSON
 
-### Tenant Management
+### Avatar & Media (3)
+- `list_avatars` — GET the free 3D avatar catalog
+- `select_avatar` — PUT a 3D avatar (catalog ID or custom .glb/.vrm URL)
+- `upload_agent_media` — Upload a local image to the CDN as avatar/logo
+
+### Versioning (2)
+- `list_agent_versions` — GET saved version snapshots
+- `restore_agent_version` — Roll back to a previous version
+
+### Agent Families (12)
+- `list_agent_families`, `get_agent_family`, `create_agent_family`,
+  `update_family_base`, `add_family_variant`, `update_family_variant`,
+  `remove_family_variant`, `publish_agent_family`, `delete_agent_family`
+  (name-confirmation), `export_agent_family` (folder export), `import_agent_family`
+  (folder/file/inline, can create), `audit_agent_family` (read-only quality audit)
+
+### Tenant Management (1)
 - `switch_tenant` — Switch active tenant (hot-swaps token)
 
-### Publishing
-- `publish_agent` — POST publish agent (draft → published)
+All write/publish tools require role owner/admin/developer; read tools (`list_*`,
+`get_*`, `export_*`, `audit_*`, `example_agent`) work for viewer+.
 
 ---
 
