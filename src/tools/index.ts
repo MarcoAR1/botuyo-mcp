@@ -72,6 +72,14 @@ import {
   importAgentFamilyHandler
 } from './agent_families.js'
 import { AUDIT_AGENT_FAMILY_TOOL, auditAgentFamilyHandler } from './audit_agent_family.js'
+import {
+  LIST_CHANNELS_TOOL,
+  listChannelsHandler,
+  CONNECT_CHANNEL_TOOL,
+  connectChannelHandler,
+  DISCONNECT_CHANNEL_TOOL,
+  disconnectChannelHandler
+} from './channels.js'
 export const ALL_TOOLS: Tool[] = [
   LIST_AGENTS_TOOL,
   GET_AGENT_TOOL,
@@ -115,6 +123,9 @@ export const ALL_TOOLS: Tool[] = [
   EXPORT_AGENT_FAMILY_TOOL,
   IMPORT_AGENT_FAMILY_TOOL,
   AUDIT_AGENT_FAMILY_TOOL,
+  LIST_CHANNELS_TOOL,
+  CONNECT_CHANNEL_TOOL,
+  DISCONNECT_CHANNEL_TOOL,
 ]
 
 export type ToolHandler = (client: BotuyoApiClient, args: Record<string, unknown>) => Promise<unknown>
@@ -162,4 +173,7 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
   export_agent_family: exportAgentFamilyHandler,
   import_agent_family: importAgentFamilyHandler,
   audit_agent_family: auditAgentFamilyHandler,
+  list_channels: (client) => listChannelsHandler(client),
+  connect_channel: connectChannelHandler,
+  disconnect_channel: disconnectChannelHandler,
 }

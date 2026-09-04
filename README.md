@@ -74,7 +74,7 @@ The server resolves your JWT from `BOTUYO_TOKEN`, falling back to `~/.botuyo/cre
 
 ## Available tools
 
-The server exposes **42 tools**. Read tools (`list_*`, `get_*`, `export_*`, `audit_*`) need `viewer+`; write/publish tools need `developer+` (see [Roles](#roles)).
+The server exposes **45 tools**. Read tools (`list_*`, `get_*`, `export_*`, `audit_*`) need `viewer+`; write/publish tools need `developer+`; channel connect/disconnect need `admin+` (see [Roles](#roles)).
 
 > **For AI assistants / IDE agents:** every tool is self-describing — its `inputSchema` lists the exact arguments (with `required`) and its `description` states role requirements and side effects. Discover the live catalog with the MCP `tools/list` request; you never need to hardcode tool names. A typical build flow is `create_agent` → `update_agent` (identity/voice) → `upsert_stage` (conversation graph) → `update_enabled_tools` / `configure_agent_tool` (capabilities) → `publish_agent`. Use `example_agent` to see a fully documented reference config, and `audit_agent_family` to validate before publishing.
 
@@ -166,6 +166,23 @@ A **family** is one logical agent with a shared `base` config plus multiple `var
 | `list_agent_versions` | List an agent's saved version snapshots |
 | `restore_agent_version` | Roll back an agent to a previous version |
 
+### Channels
+
+Connect messaging channels to the tenant **with their secrets**. Secrets are **write-only** — the server stores them and never returns their values; `list_channels` reports only which credential keys are set. Connect/disconnect require role **owner or admin**.
+
+| Tool | Description |
+|---|---|
+| `list_channels` | List the tenant's channels + status. Never returns secret values — only `credentialsSet` (which keys are configured) |
+| `connect_channel` | Connect a channel (WhatsApp, Telegram, Discord, Web, …) with its credentials. Validated against the provider API and stored server-side |
+| `disconnect_channel` | Disconnect a channel by id (archives its open conversations) |
+
+**Passing secrets safely.** `connect_channel` accepts the secret two ways:
+
+- `credentials` — literal values, e.g. `{ "botToken": "123:ABC" }`. Simplest, but the secret passes through the conversation/LLM.
+- `credentialsFromEnv` (**recommended for real secrets**) — a map of credential key → environment variable name, e.g. `{ "botToken": "MY_TG_TOKEN" }`. The MCP server reads the value from its **own** environment (set it in your MCP client config), so the secret never appears in the chat.
+
+> Channels that require an interactive flow (WhatsApp/Instagram Embedded Signup QR/OAuth) still need [admin.botuyo.com](https://admin.botuyo.com). Channels that authenticate with a static token (Telegram, Discord, WhatsApp Cloud API with an existing token, Web) can be connected here.
+
 ### Account
 
 | Tool | Description |
@@ -181,11 +198,13 @@ A **family** is one logical agent with a shared `base` config plus multiple `var
 | `developer` | ✅ | ✅ | ✅ |
 | `viewer` | ✅ | ❌ | ❌ |
 
+> **Channels:** `connect_channel` / `disconnect_channel` additionally require **owner or admin** (a `developer` can build agents but not wire up channel secrets).
+
 ## Channel Integrations
 
-Connecting channels (WhatsApp, Instagram, Telegram, Web) must be done from [admin.botuyo.com](https://admin.botuyo.com) — they require interactive flows (QR scans, OAuth, etc.).
+Channels that authenticate with a **static secret** — Telegram (bot token), Discord (bot token), WhatsApp Cloud API (existing access token), Web — can be connected directly via the `connect_channel` tool (see [Channels](#channels)). Channels that need an **interactive flow** (WhatsApp/Instagram Embedded Signup with QR scans or OAuth consent) must still be connected from [admin.botuyo.com](https://admin.botuyo.com).
 
-Use `get_agent_status` to check which channels are connected. It returns a direct link to the admin panel for any missing channel.
+Use `get_agent_status` to check which channels are connected (it links to the admin panel for any missing channel), or `list_channels` for the tenant-wide channel list and status.
 
 ## Build from source
 

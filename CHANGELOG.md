@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-09-04
+### Added
+- **Channel tools (3):** `list_channels`, `connect_channel`, `disconnect_channel` — connect messaging channels (Telegram, Discord, WhatsApp Cloud API, Web…) to a tenant directly from the IDE, closing the gap where channels could only be wired from the admin panel. Backed by a new `McpChannelController` at `/api/v1/mcp/channels/*` that reuses the existing `ConnectChannel`/`DisconnectChannel` use cases. Tool count is now **45**.
+  - **Secrets are write-only:** the server stores channel credentials and never returns their values; `list_channels` reports only `credentialsSet` (which keys are configured), never the values.
+  - **Two ways to pass a secret:** `credentials` (literal) or **`credentialsFromEnv`** (map of credential key → env var name, resolved from the MCP server's own environment so the secret never enters the chat/LLM — recommended for real secrets).
+  - **Role-gated:** connect/disconnect require owner or admin (stricter than the generic write roles). Interactive channels (WhatsApp/Instagram Embedded Signup) still use the admin panel.
+
 ## [0.7.6] — 2026-09-04
 ### Fixed
 - **MCP server advertised a stale hardcoded version (`0.3.0`)** to clients — it now reads the real version from `package.json` at startup, so `initialize` reports the published version.

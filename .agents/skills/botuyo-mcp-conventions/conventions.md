@@ -120,7 +120,7 @@ The `client.ts` `parseJson()` method handles both cases. Tool handlers receive t
 
 ## Tool Categories
 
-> **42 tools total.** The MCP tool `name` is the source of truth — note that some
+> **45 tools total.** The MCP tool `name` is the source of truth — note that some
 > file names differ from the exposed name (e.g. `list_base_tools.ts` → `get_tools_catalog`,
 > `list_knowledge_docs.ts` → `list_knowledge_documents`, `delete_knowledge_doc.ts` →
 > `delete_knowledge_document`, `associate_knowledge.ts` → `associate_knowledge_to_agent`).
@@ -175,11 +175,22 @@ The `client.ts` `parseJson()` method handles both cases. Tool handlers receive t
   (name-confirmation), `export_agent_family` (folder export), `import_agent_family`
   (folder/file/inline, can create), `audit_agent_family` (read-only quality audit)
 
+### Channels (3)
+- `list_channels` — GET tenant channels + status (file: `channels.ts`). **Secrets are never
+  returned** — only `credentialsSet` (which credential keys are configured).
+- `connect_channel` — POST connect a channel with its secret. Accepts `credentials` (literal) or
+  `credentialsFromEnv` (map credentialKey → env var name, resolved from the MCP server's own
+  `process.env` so the secret never enters the chat). **owner/admin only.**
+- `disconnect_channel` — DELETE a channel by id. **owner/admin only.**
+
+Backend: these call `/api/v1/mcp/channels/*` (`McpChannelController`), which reuses the shared
+ConnectChannel/DisconnectChannel use cases. **NEVER log a secret; NEVER return a secret value.**
+
 ### Tenant Management (1)
 - `switch_tenant` — Switch active tenant (hot-swaps token)
 
-All write/publish tools require role owner/admin/developer; read tools (`list_*`,
-`get_*`, `export_*`, `audit_*`, `example_agent`) work for viewer+.
+All write/publish tools require role owner/admin/developer; channel connect/disconnect require
+owner/admin; read tools (`list_*`, `get_*`, `export_*`, `audit_*`, `example_agent`) work for viewer+.
 
 ---
 
