@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-09-04
+### Added
+- **Integration tools (3):** `list_integrations`, `configure_integration`, `remove_integration` — install/configure the tenant's external integrations (Shopify, PaseoLibre, Google Calendar, email SMTP, …) with their secrets, from the IDE. Backed by a new `McpIntegrationController` at `/api/v1/mcp/integrations/*` reusing the shared `IntegrationService` (validates credentials + encrypts on write). Tool count is now **48**.
+  - Same secure model as channels: secrets are **write-only** (`list_integrations` returns only `configKeys`, never values), and `configure_integration` accepts a literal `config` or **`configFromEnv`** (config key → env var name resolved from the MCP server environment, so the secret never enters the chat).
+  - **Role-gated:** configure/remove require owner or admin.
+  - **RULE 0:** integrations are agent/tenant infrastructure; Recruiting-owned config (e.g. recruiting email senders) stays with the Recruiting copiloto and is NOT exposed here.
+
 ## [0.8.0] — 2026-09-04
 ### Added
 - **Channel tools (3):** `list_channels`, `connect_channel`, `disconnect_channel` — connect messaging channels (Telegram, Discord, WhatsApp Cloud API, Web…) to a tenant directly from the IDE, closing the gap where channels could only be wired from the admin panel. Backed by a new `McpChannelController` at `/api/v1/mcp/channels/*` that reuses the existing `ConnectChannel`/`DisconnectChannel` use cases. Tool count is now **45**.

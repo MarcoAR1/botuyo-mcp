@@ -120,7 +120,7 @@ The `client.ts` `parseJson()` method handles both cases. Tool handlers receive t
 
 ## Tool Categories
 
-> **45 tools total.** The MCP tool `name` is the source of truth — note that some
+> **48 tools total.** The MCP tool `name` is the source of truth — note that some
 > file names differ from the exposed name (e.g. `list_base_tools.ts` → `get_tools_catalog`,
 > `list_knowledge_docs.ts` → `list_knowledge_documents`, `delete_knowledge_doc.ts` →
 > `delete_knowledge_document`, `associate_knowledge.ts` → `associate_knowledge_to_agent`).
@@ -186,11 +186,21 @@ The `client.ts` `parseJson()` method handles both cases. Tool handlers receive t
 Backend: these call `/api/v1/mcp/channels/*` (`McpChannelController`), which reuses the shared
 ConnectChannel/DisconnectChannel use cases. **NEVER log a secret; NEVER return a secret value.**
 
+### Integrations (3)
+- `list_integrations` — GET catalog + installed (file: `integrations.ts`). **Secrets never returned**
+  — only `configKeys`.
+- `configure_integration` — POST install/update a tenant integration with its secret (`config`
+  literal or `configFromEnv` env-ref). **owner/admin only.** Backed by `IntegrationService`.
+- `remove_integration` — DELETE (uninstall). **owner/admin only.**
+
+Backend: `/api/v1/mcp/integrations/*` (`McpIntegrationController`), reusing `IntegrationService`.
+**RULE 0:** integrations = agent/tenant infra; Recruiting-owned config (email senders) is NOT here.
+
 ### Tenant Management (1)
 - `switch_tenant` — Switch active tenant (hot-swaps token)
 
-All write/publish tools require role owner/admin/developer; channel connect/disconnect require
-owner/admin; read tools (`list_*`, `get_*`, `export_*`, `audit_*`, `example_agent`) work for viewer+.
+All write/publish tools require role owner/admin/developer; channel/integration connect/configure
+require owner/admin; read tools (`list_*`, `get_*`, `export_*`, `audit_*`, `example_agent`) work for viewer+.
 
 ---
 

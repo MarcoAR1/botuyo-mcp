@@ -80,6 +80,14 @@ import {
   DISCONNECT_CHANNEL_TOOL,
   disconnectChannelHandler
 } from './channels.js'
+import {
+  LIST_INTEGRATIONS_TOOL,
+  listIntegrationsHandler,
+  CONFIGURE_INTEGRATION_TOOL,
+  configureIntegrationHandler,
+  REMOVE_INTEGRATION_TOOL,
+  removeIntegrationHandler
+} from './integrations.js'
 export const ALL_TOOLS: Tool[] = [
   LIST_AGENTS_TOOL,
   GET_AGENT_TOOL,
@@ -126,6 +134,9 @@ export const ALL_TOOLS: Tool[] = [
   LIST_CHANNELS_TOOL,
   CONNECT_CHANNEL_TOOL,
   DISCONNECT_CHANNEL_TOOL,
+  LIST_INTEGRATIONS_TOOL,
+  CONFIGURE_INTEGRATION_TOOL,
+  REMOVE_INTEGRATION_TOOL,
 ]
 
 export type ToolHandler = (client: BotuyoApiClient, args: Record<string, unknown>) => Promise<unknown>
@@ -176,4 +187,7 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
   list_channels: (client) => listChannelsHandler(client),
   connect_channel: connectChannelHandler,
   disconnect_channel: disconnectChannelHandler,
+  list_integrations: (client) => listIntegrationsHandler(client),
+  configure_integration: configureIntegrationHandler,
+  remove_integration: removeIntegrationHandler,
 }

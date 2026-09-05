@@ -74,7 +74,7 @@ The server resolves your JWT from `BOTUYO_TOKEN`, falling back to `~/.botuyo/cre
 
 ## Available tools
 
-The server exposes **45 tools**. Read tools (`list_*`, `get_*`, `export_*`, `audit_*`) need `viewer+`; write/publish tools need `developer+`; channel connect/disconnect need `admin+` (see [Roles](#roles)).
+The server exposes **48 tools**. Read tools (`list_*`, `get_*`, `export_*`, `audit_*`) need `viewer+`; write/publish tools need `developer+`; channel & integration connect/configure need `admin+` (see [Roles](#roles)).
 
 > **For AI assistants / IDE agents:** every tool is self-describing — its `inputSchema` lists the exact arguments (with `required`) and its `description` states role requirements and side effects. Discover the live catalog with the MCP `tools/list` request; you never need to hardcode tool names. A typical build flow is `create_agent` → `update_agent` (identity/voice) → `upsert_stage` (conversation graph) → `update_enabled_tools` / `configure_agent_tool` (capabilities) → `publish_agent`. Use `example_agent` to see a fully documented reference config, and `audit_agent_family` to validate before publishing.
 
@@ -183,6 +183,18 @@ Connect messaging channels to the tenant **with their secrets**. Secrets are **w
 
 > Channels that require an interactive flow (WhatsApp/Instagram Embedded Signup QR/OAuth) still need [admin.botuyo.com](https://admin.botuyo.com). Channels that authenticate with a static token (Telegram, Discord, WhatsApp Cloud API with an existing token, Web) can be connected here.
 
+### Integrations
+
+Install and configure the tenant's external integrations (Shopify, PaseoLibre, Google Calendar, email SMTP, …) **with their secrets**, using the same write-only secret model as channels. Configure/remove require role **owner or admin**.
+
+| Tool | Description |
+|---|---|
+| `list_integrations` | List the integration catalog (available) + the tenant's installed integrations. Never returns secret values — only `configKeys` (which config keys are set) |
+| `configure_integration` | Install or update an integration with its config/secret (validated against the provider, stored server-side). Accepts literal `config` or `configFromEnv` (env-var reference) |
+| `remove_integration` | Uninstall an integration by id |
+
+Same two secret modes as `connect_channel`: literal `config`, or `configFromEnv` (map config key → env var name resolved from the MCP server environment, keeping the secret out of the chat).
+
 ### Account
 
 | Tool | Description |
@@ -198,7 +210,7 @@ Connect messaging channels to the tenant **with their secrets**. Secrets are **w
 | `developer` | ✅ | ✅ | ✅ |
 | `viewer` | ✅ | ❌ | ❌ |
 
-> **Channels:** `connect_channel` / `disconnect_channel` additionally require **owner or admin** (a `developer` can build agents but not wire up channel secrets).
+> **Channels & integrations:** `connect_channel` / `disconnect_channel` / `configure_integration` / `remove_integration` additionally require **owner or admin** (a `developer` can build agents but not wire up channel/integration secrets).
 
 ## Channel Integrations
 
