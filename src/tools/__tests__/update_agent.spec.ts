@@ -36,7 +36,7 @@ describe('updateAgentHandler', () => {
   it('advertises endUserAuth in the inputSchema', () => {
     const props = (UPDATE_AGENT_TOOL.inputSchema as any).properties
     expect(props.endUserAuth).toBeDefined()
-    expect(props.endUserAuth.type).toBe('object')
+    expect(props.endUserAuth.type).toEqual(['object', 'null'])
     // the key nested fields the assistant must know it can set
     expect(props.endUserAuth.properties.mode).toBeDefined()
     expect(props.endUserAuth.properties.jwksUrl).toBeDefined()

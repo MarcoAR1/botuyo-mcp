@@ -9,7 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > **same commit** as the bump. Add changes under `[Unreleased]`, then move them into a
 > dated version section when you bump + publish.
 
-## [Unreleased]
+## [0.10.0] - 2026-09-13
+
+- Preserve full tool catalog metadata and schemas; add `get_tool_contract` for per-agent/channel declarations and availability.
+- Publish typed configuration schemas for fields and family bases/overrides. Validate MCP inputs while preserving `update_agent` null deletion semantics.
+- Add `mode`, `expectedUpdatedAt`, `stageIds` and connector support to `configure_agent_tool`; document atomic conflict detection and patch versus replacement.
+- Return structured object results alongside compatible text, validate declared output schemas and mark business failures as MCP errors.
+- Document configured navigation and client receipts, legacy limitations, and backend schema synchronization.
+- Exclude compiled `dist` copies from test discovery so each source test runs once.
 
 ## [0.9.0] — 2026-09-04
 ### Added

@@ -1,6 +1,6 @@
 {
   "name": "@botuyo/mcp",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "BotUyo MCP Server — create and manage AI agents via Model Context Protocol",
   "keywords": [
     "mcp",
@@ -16,7 +16,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "docs"
   ],
   "scripts": {
     "build": "tsc",
@@ -24,7 +25,9 @@
     "start": "node dist/index.js",
     "test": "vitest run",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "schemas:sync": "node scripts/sync-tool-schemas.mjs",
+    "schemas:check": "node scripts/sync-tool-schemas.mjs --check"
   },
   "publishConfig": {
     "access": "public"
@@ -32,6 +35,8 @@
   "dependencies": {
     "@botuyo/contracts": "^0.2.0",
     "@modelcontextprotocol/sdk": "^1.7.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {

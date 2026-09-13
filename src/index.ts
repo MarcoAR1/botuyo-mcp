@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { assertToolInput, formatToolResult } from './toolProtocol.js'
 /**
  * @botuyo/mcp — Entry Point
  *
@@ -212,8 +213,9 @@ async function startMcpServer() {
     }
 
     try {
+      assertToolInput(ALL_TOOLS.find(tool => tool.name === name)!, args || {})
       const result = await handler(client, args || {})
-      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
+      return formatToolResult(ALL_TOOLS.find(tool => tool.name === name)!, result)
     } catch (error: unknown) {
       // Detect expired token via ApiError.status (reliable) or message fallback
       const is401 = (error instanceof ApiError && error.status === 401) ||
@@ -227,7 +229,7 @@ async function startMcpServer() {
           console.error('[botuyo-mcp] ✓ Credenciales recargadas desde disco, reintentando...')
           try {
             const retryResult = await handler(client, args || {})
-            return { content: [{ type: 'text', text: JSON.stringify(retryResult, null, 2) }] }
+            return formatToolResult(ALL_TOOLS.find(tool => tool.name === name)!, retryResult)
           } catch (retryError: unknown) {
             const retryMsg = retryError instanceof Error ? retryError.message : String(retryError)
             return { content: [{ type: 'text', text: `Error tras reintentar: ${retryMsg}` }], isError: true }

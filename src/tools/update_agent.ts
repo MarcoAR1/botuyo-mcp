@@ -1,4 +1,5 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js'
+import { nullableUpdate } from '../schemas/nullableUpdate.js'
 import type { BotuyoApiClient } from '../client.js'
 import { voiceProfileHelp } from '../format.js'
 
@@ -112,6 +113,10 @@ avatar3dUrl, cssVariables (object), darkCssVariables (object), animations (objec
     },
     required: ['agentId']
   }
+}
+
+for (const [key, schema] of Object.entries(UPDATE_AGENT_TOOL.inputSchema.properties || {})) {
+  if (key !== 'agentId') UPDATE_AGENT_TOOL.inputSchema.properties![key] = nullableUpdate(schema as Record<string, unknown>)
 }
 
 export async function updateAgentHandler(client: BotuyoApiClient, args: Record<string, unknown>) {

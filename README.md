@@ -6,6 +6,8 @@ Create and manage BotUyo AI agents directly from your AI coding tools — **no c
 
 ## Quickstart
 
+For the next release's schema discovery, configuration updates, virtual tools and navigation example, see [Tool contracts](docs/tool-contracts.md). The new contracts require the matching backend.
+
 The fastest way — one command configures your editor **and** logs you in:
 
 ```sh

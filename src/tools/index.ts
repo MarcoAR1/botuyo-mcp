@@ -42,6 +42,7 @@ import { CONFIGURE_AGENT_TOOL, configureAgentToolHandler } from './configure_age
 import { LIST_TOOL_CONFIGS_TOOL, listToolConfigsHandler } from './list_tool_configs.js'
 import { REMOVE_TOOL_CONFIG_TOOL, removeToolConfigHandler } from './remove_tool_config.js'
 import { GET_TOOL_CONFIG_TOOL, getToolConfigHandler } from './get_tool_config.js'
+import { GET_TOOL_CONTRACT_TOOL, getToolContractHandler } from './get_tool_contract.js'
 import { GET_TOOLS_CATALOG_TOOL, getToolsCatalogHandler } from './list_base_tools.js'
 import { LIST_AVATARS_TOOL, listAvatarsHandler, SELECT_AVATAR_TOOL, selectAvatarHandler } from './configure_avatar.js'
 import { UPLOAD_AGENT_MEDIA_TOOL, uploadAgentMediaHandler } from './upload_agent_media.js'
@@ -113,6 +114,7 @@ export const ALL_TOOLS: Tool[] = [
   LIST_TOOL_CONFIGS_TOOL,
   REMOVE_TOOL_CONFIG_TOOL,
   GET_TOOL_CONFIG_TOOL,
+  GET_TOOL_CONTRACT_TOOL,
   GET_TOOLS_CATALOG_TOOL,
   LIST_AVATARS_TOOL,
   SELECT_AVATAR_TOOL,
@@ -166,6 +168,7 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
   list_tool_configs: listToolConfigsHandler,
   remove_tool_config: removeToolConfigHandler,
   get_tool_config: getToolConfigHandler,
+  get_tool_contract: getToolContractHandler,
   get_tools_catalog: getToolsCatalogHandler,
   list_avatars: listAvatarsHandler,
   select_avatar: selectAvatarHandler,

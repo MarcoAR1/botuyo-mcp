@@ -7,9 +7,10 @@ export const GET_TOOLS_CATALOG_TOOL: Tool = {
   inputSchema: {
     type: 'object',
     properties: {
-      filter: { type: 'string', description: 'Filtro opcional: "configurable" (solo configurables), "multi" (solo multi-instance), o vacío para todas' }
+      filter: { type: 'string', enum: ['', 'configurable', 'multi'], description: 'Filtro opcional: configurable, multi, o vacío para todas' }
     }
-  }
+  },
+  outputSchema: { type: 'object', required: ['text', 'tools'], properties: { text: { type: 'string' }, tools: { type: 'array', items: { type: 'object' } } } }
 }
 
 export async function getToolsCatalogHandler(client: BotuyoApiClient, args: Record<string, unknown>) {
@@ -38,7 +39,7 @@ export async function getToolsCatalogHandler(client: BotuyoApiClient, args: Reco
 
     output += `  ${tool.name} ${badges.length > 0 ? `[${badges.join(', ')}]` : ''}\n`
     if (tool.description) {
-      output += `    ${tool.description.slice(0, 120)}\n`
+      output += `    ${tool.description}\n`
     }
     if (tool.configSchema && tool.configSchema.length > 0) {
       const keys = tool.configSchema.map((f: any) => `${f.key}(${f.type})`).join(', ')
@@ -50,5 +51,5 @@ export async function getToolsCatalogHandler(client: BotuyoApiClient, args: Reco
     output += '\n'
   }
 
-  return { text: output }
+  return { text: output, tools }
 }

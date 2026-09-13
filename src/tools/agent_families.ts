@@ -10,6 +10,7 @@
  */
 
 import type { Tool } from '@modelcontextprotocol/sdk/types.js'
+import { partialAgentConfigSchema } from '../schemas/toolConfig.js'
 import { buildExportMeta, parseExportMeta, sortVariantsByOrder } from '@botuyo/contracts'
 import type { BotuyoApiClient } from '../client.js'
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs'
@@ -26,7 +27,7 @@ const PARTIAL_CONFIG_DESC =
 const variantProps = {
   key: { type: 'string', description: 'Stable logical id of the variant (immutable handoff target, e.g. "a1").' },
   label: { type: 'string', description: 'Human label shown in the UI (e.g. "A1 (Beginner)").' },
-  overrides: { type: 'object', description: PARTIAL_CONFIG_DESC },
+  overrides: { ...partialAgentConfigSchema, description: PARTIAL_CONFIG_DESC },
   handoffTargets: {
     type: 'array',
     items: { type: 'string' },
@@ -73,7 +74,7 @@ export const CREATE_AGENT_FAMILY_TOOL: Tool = {
       name: { type: 'string', description: 'Display name of the logical agent (e.g. "Ms. Ellis").' },
       slug: { type: 'string', description: 'URL/identifier slug (e.g. "ms-ellis"); default shared memoryNamespace.' },
       entryVariantKey: { type: 'string', description: 'Which variant owns the public entry. Must match a variant key.' },
-      base: { type: 'object', description: `Shared base config inherited by every variant. ${PARTIAL_CONFIG_DESC}` },
+      base: { ...partialAgentConfigSchema, description: `Shared base config inherited by every variant. ${PARTIAL_CONFIG_DESC}` },
       variants: {
         type: 'array',
         description: 'Ordered list of variants. At least one; must include entryVariantKey.',
@@ -103,7 +104,7 @@ export const UPDATE_FAMILY_BASE_TOOL: Tool = {
     type: 'object',
     properties: {
       familyId: { type: 'string', description: 'The agent family id.' },
-      base: { type: 'object', description: `New shared base config. ${PARTIAL_CONFIG_DESC}` }
+      base: { ...partialAgentConfigSchema, description: `New shared base config. ${PARTIAL_CONFIG_DESC}` }
     },
     required: ['familyId', 'base']
   }
@@ -326,7 +327,7 @@ export const IMPORT_AGENT_FAMILY_TOOL: Tool = {
           name: { type: 'string' },
           slug: { type: 'string' },
           entryVariantKey: { type: 'string', description: 'Must match one of the variant keys.' },
-          base: { type: 'object', description: PARTIAL_CONFIG_DESC },
+          base: { ...partialAgentConfigSchema, description: PARTIAL_CONFIG_DESC },
           variants: { type: 'array', items: { type: 'object', properties: variantProps, required: ['key', 'label'] } }
         },
         required: ['entryVariantKey', 'variants']
